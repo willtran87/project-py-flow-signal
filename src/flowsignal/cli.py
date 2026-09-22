@@ -31,6 +31,7 @@ def render_text(report: Report) -> str:
         "",
     ]
     for finding in report.findings:
+        # Finding state remains independent of runtime observations and cache use.
         location = finding.evidence[0].location
         lines.extend(
             [
@@ -91,7 +92,17 @@ def render_text(report: Report) -> str:
             )
             + (" (partial context)" if gap.context_truncated else "")
         )
+    if report.analysis_stats.get("cache"):
+        lines.append(
+            "Incremental scan: "
+            + json.dumps(report.analysis_stats["cache"], sort_keys=True)
+        )
     if report.runtime:
+        if report.runtime.get("run_comparison"):
+            lines.append(
+                "Runtime run comparison: "
+                + json.dumps(report.runtime["run_comparison"], sort_keys=True)
+            )
         lines.append(
             "Runtime comparison: "
             + json.dumps(report.runtime["summary"], sort_keys=True)
@@ -204,6 +215,16 @@ def parser() -> argparse.ArgumentParser:
         "scan", help="Scan Python sources without importing or executing them"
     )
     command.add_argument("path", nargs="?", default=".")
+    command.add_argument(
+        "--cache-dir",
+        type=Path,
+        help="Reuse trusted local JSON scan/AST facts; changed sources rebuild global relationships",
+    )
+    command.add_argument(
+        "--previous-runtime-trace",
+        type=Path,
+        help="Compare runs against --runtime-trace using the current source snapshot",
+    )
     command.add_argument(
         "--timeout-seconds",
         type=float,
@@ -341,6 +362,8 @@ def main(
             return 0
         if args.fail_on_new and not args.baseline:
             raise ValueError("--fail-on-new requires --baseline")
+        if args.previous_runtime_trace and not args.runtime_trace:
+            raise ValueError("--previous-runtime-trace requires --runtime-trace")
         previous = read_baseline(args.baseline) if args.baseline else None
         target = Path(args.path).absolute()
         root = target.parent if target.is_file() else target
@@ -356,7 +379,14 @@ def main(
             )
         config = load_config(config_path) if config_path else Config()
         protected = {
-            p.resolve() for p in (config_path, args.baseline, args.runtime_trace) if p
+            p.resolve()
+            for p in (
+                config_path,
+                args.baseline,
+                args.runtime_trace,
+                args.previous_runtime_trace,
+            )
+            if p
         }
         if args.output and args.output.resolve() in protected:
             raise ValueError(
@@ -378,6 +408,12 @@ def main(
         ):
             raise ValueError("Baseline output must not overwrite runtime trace input")
         for output in (args.output, args.save_baseline):
+            if (
+                output
+                and args.previous_runtime_trace
+                and output.resolve() == args.previous_runtime_trace.resolve()
+            ):
+                raise ValueError("Output must not overwrite previous runtime trace")
             if output:
                 validate_output_path(output)
         config.entrypoints.extend(args.entrypoint)
@@ -386,7 +422,11 @@ def main(
         if args.no_source:
             config.include_source = False
         config.lifecycle_info |= args.lifecycle_info
-        report = scan(target, config)
+        report = (
+            scan(target, config, cache_dir=args.cache_dir)
+            if args.cache_dir
+            else scan(target, config)
+        )
         if _worker_limits:
             report.analysis_stats["worker_limits"] = _worker_limits
         rank = {"low": 1, "medium": 2, "high": 3}
@@ -396,12 +436,19 @@ def main(
             if rank[finding.confidence] >= rank[args.min_confidence]
         ]
         report.settings["min_confidence"] = args.min_confidence
+        from .review_queue import attach
+
+        attach(report)
         if previous is not None:
             compare(report, previous)
         if args.runtime_trace:
             from .runtime import compare_trace
 
             compare_trace(report, args.runtime_trace)
+            if args.previous_runtime_trace:
+                from .runtime import compare_runs
+
+                compare_runs(report, args.previous_runtime_trace)
         baseline_content = (
             json.dumps(make_baseline(report), indent=2, ensure_ascii=True) + "\n"
             if args.save_baseline

@@ -3,8 +3,8 @@
   "totals": {
     "development": {
       "edges": {
-        "labeled_cases": 8,
-        "true_positive": 4,
+        "labeled_cases": 13,
+        "true_positive": 13,
         "false_positive": 0,
         "false_negative": 0,
         "precision": 1.0,
@@ -29,19 +29,23 @@
     },
     "evaluation": {
       "edges": {
-        "labeled_cases": 5,
-        "true_positive": 3,
+        "labeled_cases": 12,
+        "true_positive": 14,
         "false_positive": 0,
-        "false_negative": 6,
+        "false_negative": 11,
         "precision": 1.0,
-        "recall": 0.3333333333333333
+        "recall": 0.56
       }
-    }
+    },
+    "review_pending": {}
   },
   "cases": [
     {
       "id": "pycg/functions/call",
-      "split": "evaluation",
+      "split": "development",
+      "feature": "functions",
+      "reviewer": null,
+      "label_signature": "33aae132517472d99e9a80869cc296ea965fec6e8e0ae58dd5d9d622f2e890bb",
       "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
       "metrics": {
         "edges": {
@@ -62,22 +66,20 @@
     },
     {
       "id": "pycg/functions/imported_call",
-      "split": "evaluation",
+      "split": "development",
+      "feature": "functions",
+      "reviewer": null,
+      "label_signature": "e5a95ce5a2e63329e0925a90e627fa827212c239dd51bd3b6ec22e654ec7979a",
       "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
       "metrics": {
         "edges": {
-          "true_positive": 0,
+          "true_positive": 1,
           "false_positive": 0,
-          "false_negative": 1,
-          "precision": null,
-          "recall": 0.0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
           "unexpected": [],
-          "missed": [
-            [
-              "main",
-              "to_import.func"
-            ]
-          ]
+          "missed": []
         }
       },
       "findings_by_rule": {},
@@ -88,22 +90,20 @@
     },
     {
       "id": "pycg/returns/call",
-      "split": "evaluation",
+      "split": "development",
+      "feature": "returns",
+      "reviewer": null,
+      "label_signature": "192812861fa1b0f9fb1a1eae01fa13d9f23f11456b89c739591ea66d7f060c26",
       "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
       "metrics": {
         "edges": {
-          "true_positive": 1,
+          "true_positive": 2,
           "false_positive": 0,
-          "false_negative": 1,
+          "false_negative": 0,
           "precision": 1.0,
-          "recall": 0.5,
+          "recall": 1.0,
           "unexpected": [],
-          "missed": [
-            [
-              "main",
-              "main.return_func"
-            ]
-          ]
+          "missed": []
         }
       },
       "findings_by_rule": {},
@@ -114,30 +114,20 @@
     },
     {
       "id": "pycg/assignments/tuple",
-      "split": "evaluation",
+      "split": "development",
+      "feature": "assignments",
+      "reviewer": null,
+      "label_signature": "c621f8093ddcff49c8418c7fa99bf3ba7597f3ee404f5cc250a2ab750622c537",
       "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
       "metrics": {
         "edges": {
-          "true_positive": 0,
+          "true_positive": 3,
           "false_positive": 0,
-          "false_negative": 3,
-          "precision": null,
-          "recall": 0.0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
           "unexpected": [],
-          "missed": [
-            [
-              "main",
-              "main.func1"
-            ],
-            [
-              "main",
-              "main.func2"
-            ],
-            [
-              "main",
-              "main.func3"
-            ]
-          ]
+          "missed": []
         }
       },
       "findings_by_rule": {},
@@ -148,22 +138,20 @@
     },
     {
       "id": "pycg/classes/super_class_return",
-      "split": "evaluation",
+      "split": "development",
+      "feature": "classes",
+      "reviewer": null,
+      "label_signature": "e51648dc97bda630edaa4d301f3d27cf1c927fe9d4ada02ec1812fa4dc952e83",
       "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
       "metrics": {
         "edges": {
-          "true_positive": 1,
+          "true_positive": 2,
           "false_positive": 0,
-          "false_negative": 1,
+          "false_negative": 0,
           "precision": 1.0,
-          "recall": 0.5,
+          "recall": 1.0,
           "unexpected": [],
-          "missed": [
-            [
-              "main",
-              "main.A.func1"
-            ]
-          ]
+          "missed": []
         }
       },
       "findings_by_rule": {},
@@ -175,6 +163,9 @@
     {
       "id": "reported",
       "split": "development",
+      "feature": "instrumentation",
+      "reviewer": null,
+      "label_signature": "dbf41a186372d501eff802a88f676a3c83740bcb45bed776c8cf0bd26026bde5",
       "source": "FlowSignal authored regression fixture; not independent validation",
       "metrics": {
         "edges": {
@@ -211,6 +202,9 @@
     {
       "id": "silent",
       "split": "development",
+      "feature": "instrumentation",
+      "reviewer": null,
+      "label_signature": "a13e21be34f6d4ffc7b96e179171b2d8f056ed2990d39a51590fa0440da7f8ca",
       "source": "FlowSignal authored regression fixture; not independent validation",
       "metrics": {
         "edges": {
@@ -266,6 +260,9 @@
     {
       "id": "finally",
       "split": "development",
+      "feature": "instrumentation",
+      "reviewer": null,
+      "label_signature": "476ced1aa408a69c81f1b2e5601c93645f90da27856090239f412a8e3a870ac0",
       "source": "FlowSignal authored regression fixture; not independent validation",
       "metrics": {
         "edges": {
@@ -312,6 +309,9 @@
     {
       "id": "traceback",
       "split": "development",
+      "feature": "instrumentation",
+      "reviewer": null,
+      "label_signature": "3660617a5be1f1bd55e06c92d1c6c341e5a21560c58a20506f7081a4da3896a7",
       "source": "FlowSignal authored regression fixture; not independent validation",
       "metrics": {
         "edges": {
@@ -358,6 +358,9 @@
     {
       "id": "terminal_warning",
       "split": "development",
+      "feature": "instrumentation",
+      "reviewer": null,
+      "label_signature": "e10324cbe49c1f995e4b31ac552d714c934d284aa63f11dbbe775ad27b9df4dc",
       "source": "FlowSignal authored regression fixture; not independent validation",
       "metrics": {
         "edges": {
@@ -404,6 +407,9 @@
     {
       "id": "double_reporting",
       "split": "development",
+      "feature": "instrumentation",
+      "reviewer": null,
+      "label_signature": "0a20dc718f56c5b3a46adeeed76926df39c104e21dfa52b0adec363dc757403b",
       "source": "FlowSignal authored regression fixture; not independent validation",
       "metrics": {
         "edges": {
@@ -450,6 +456,9 @@
     {
       "id": "discarded_task",
       "split": "development",
+      "feature": "instrumentation",
+      "reviewer": null,
+      "label_signature": "c7a4d5c48f8768aa890800131f763a5ee63834833916a3928e34675aa0357fc6",
       "source": "FlowSignal authored regression fixture; not independent validation",
       "metrics": {
         "edges": {
@@ -496,6 +505,9 @@
     {
       "id": "lifecycle",
       "split": "development",
+      "feature": "instrumentation",
+      "reviewer": null,
+      "label_signature": "54d2adaa35b91a9a74390def538d0d7468d3b315b336b40290abc6aa2d0f7500",
       "source": "FlowSignal authored regression fixture; not independent validation",
       "metrics": {
         "edges": {
@@ -538,7 +550,448 @@
         }
       },
       "unlabeled": []
+    },
+    {
+      "id": "pycg/args/call",
+      "split": "evaluation",
+      "feature": "args",
+      "reviewer": null,
+      "label_signature": "5942a1d099742b68a2d68d3c798dc7949dda1d05bdb68d0465560f3aaf865e61",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "unexpected": [],
+          "missed": [
+            [
+              "main.func",
+              "main.param_func"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/args/imported_call",
+      "split": "evaluation",
+      "feature": "args",
+      "reviewer": null,
+      "label_signature": "9c432a1a49f497e44e7b632e52ef9c2cb4e65fe2a46ea4c1b160038aaec95513",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "unexpected": [],
+          "missed": [
+            [
+              "to_import.func",
+              "main.param_func"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/args/param_call",
+      "split": "evaluation",
+      "feature": "args",
+      "reviewer": null,
+      "label_signature": "1c3350e25075104857a133a2fe6b7b05ec272ca7c0f0182bd46944193f4c6ce8",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 2,
+          "false_positive": 0,
+          "false_negative": 1,
+          "precision": 1.0,
+          "recall": 0.6666666666666666,
+          "unexpected": [],
+          "missed": [
+            [
+              "main.func",
+              "main.func3"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/kwargs/chained_call",
+      "split": "evaluation",
+      "feature": "kwargs",
+      "reviewer": null,
+      "label_signature": "09a02c02cbb580ec58611a9eafd9123fc2b1dfdd6b762f58cd3433a41df52e9e",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 3,
+          "precision": 1.0,
+          "recall": 0.25,
+          "unexpected": [],
+          "missed": [
+            [
+              "main.func1",
+              "main.func2"
+            ],
+            [
+              "main.func2",
+              "main.func2"
+            ],
+            [
+              "main.func2",
+              "main.func3"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/classes/base_class_calls_child",
+      "split": "evaluation",
+      "feature": "classes",
+      "reviewer": null,
+      "label_signature": "e35caf59cdf5b36e653f4cf9ca10d8765eb706a8d91d71e704e8e7f398228bd9",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 3,
+          "false_positive": 0,
+          "false_negative": 2,
+          "precision": 1.0,
+          "recall": 0.6,
+          "unexpected": [],
+          "missed": [
+            [
+              "main.A.func",
+              "main.B.func2"
+            ],
+            [
+              "main.A.func",
+              "main.C.func2"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/classes/imported_nested_attr_access",
+      "split": "evaluation",
+      "feature": "classes",
+      "reviewer": null,
+      "label_signature": "689528baf7cb174087428041d65b348c9d1fa749a5c21b98fa562366e41affad",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/classes/parameter_call",
+      "split": "evaluation",
+      "feature": "classes",
+      "reviewer": null,
+      "label_signature": "8201a3cae4fd98416e61b8ae5c60e137b53a3174fc87ad8c57deb2a25b69e5cc",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 2,
+          "precision": 1.0,
+          "recall": 0.3333333333333333,
+          "unexpected": [],
+          "missed": [
+            [
+              "main.MyClass.func1",
+              "main.MyClass.func2"
+            ],
+            [
+              "main.MyClass.func2",
+              "main.MyClass.func3"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/imports/relative_import",
+      "split": "evaluation",
+      "feature": "imports",
+      "reviewer": null,
+      "label_signature": "3d8c1b0aed852c31f98cb256a0e8b630c72cb8376b5b266f1df3283c10f44031",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/imports/import_as",
+      "split": "evaluation",
+      "feature": "imports",
+      "reviewer": null,
+      "label_signature": "a08d83015b01de2a5f3211714cb7329f8863b9b2c9693ca3226d79cce8d1aa65",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/functions/assigned_call_lit_param",
+      "split": "evaluation",
+      "feature": "functions",
+      "reviewer": null,
+      "label_signature": "3fd5c7bf0aca5010cfb5a67e81fe6475bc5b44d28c2866a1382bf3baba4f77b0",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/returns/imported_call",
+      "split": "evaluation",
+      "feature": "returns",
+      "reviewer": null,
+      "label_signature": "3ee8f1db81b42d237089b14d0f283ed1e03fadc6650fa62c09d4eaa828b08cea",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 2,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/lambdas/parameter_call",
+      "split": "evaluation",
+      "feature": "lambdas",
+      "reviewer": null,
+      "label_signature": "498ca0973147b992c4280990a63eb99e71fc0e3a83f69b028390af2fceca3e6d",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "unexpected": [],
+          "missed": [
+            [
+              "main.func",
+              "main.<lambda1>"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "workflow-review",
+      "split": "review_pending",
+      "feature": "multi_file_workflow",
+      "reviewer": null,
+      "label_signature": "fdbb55c58aeb8642f7fec62be73cd6c6fb1c7ca36e5e84cebb18969a17670fe0",
+      "source": "FlowSignal-authored realistic workflow; awaiting independent instrumentation adjudication",
+      "metrics": {},
+      "findings_by_rule": {},
+      "unlabeled": [
+        "edges",
+        "findings",
+        "owners"
+      ]
     }
   ],
+  "call_features": {
+    "development/functions": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "development/returns": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "development/assignments": {
+      "true_positive": 3,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "development/classes": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "development/instrumentation": {
+      "true_positive": 4,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "evaluation/args": {
+      "true_positive": 4,
+      "false_positive": 0,
+      "false_negative": 3,
+      "precision": 1.0,
+      "recall": 0.5714285714285714
+    },
+    "evaluation/kwargs": {
+      "true_positive": 1,
+      "false_positive": 0,
+      "false_negative": 3,
+      "precision": 1.0,
+      "recall": 0.25
+    },
+    "evaluation/classes": {
+      "true_positive": 5,
+      "false_positive": 0,
+      "false_negative": 4,
+      "precision": 1.0,
+      "recall": 0.5555555555555556
+    },
+    "evaluation/imports": {
+      "true_positive": 0,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": null,
+      "recall": null
+    },
+    "evaluation/functions": {
+      "true_positive": 1,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "evaluation/returns": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "evaluation/lambdas": {
+      "true_positive": 1,
+      "false_positive": 0,
+      "false_negative": 1,
+      "precision": 1.0,
+      "recall": 0.5
+    }
+  },
+  "independently_reviewed_cases": 0,
   "note": "Small fixed corpus, not enterprise accuracy. Evaluation has independent call labels only; unlabeled findings/owners are not scored. Missing expected symbols count as misses. Pairs are unique, not call-site counts. No target code was executed."
 }

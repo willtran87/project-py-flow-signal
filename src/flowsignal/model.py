@@ -145,6 +145,7 @@ class Log:
     exception_context: bool
     handler: str | None
     conditional: bool = False
+    execution: str = "immediate"
 
 
 @dataclass
@@ -157,6 +158,7 @@ class ReportingSignal:
     pattern: str
     basis: str
     conditional: bool = False
+    execution: str = "immediate"
 
 
 @dataclass
@@ -170,6 +172,9 @@ class Handler:
     calls: list[str] = field(default_factory=list)
     conditional: bool = False
     reporting_signals: list[ReportingSignal] = field(default_factory=list)
+    path_reporting: bool | None = None
+    reporting_paths: list[dict] = field(default_factory=list)
+    paths_truncated: bool = False
 
     @property
     def catches_all(self) -> bool:
@@ -237,6 +242,7 @@ class Report:
     resolution_gaps: list[ResolutionGap] = field(default_factory=list)
     review_history: list[dict[str, Any]] = field(default_factory=list)
     runtime: dict[str, Any] | None = None
+    review_queue: dict[str, Any] = field(default_factory=dict)
 
     def summary(self) -> dict[str, Any]:
         return {

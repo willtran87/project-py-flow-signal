@@ -232,18 +232,25 @@ LLM enrichment remains a future extension. Runtime call-pair import is available
 
 ## Accuracy, exports, and lifecycle review
 
+The latest [workflow analysis and review guide](docs/WORKFLOW_ACCURACY.md) covers callable-value inference, explicit handler-exit reporting paths, the expanded benchmark and independent-label packet, runtime collection, caching, and the workflow queue. Independent instrumentation adjudication remains pending.
+
 ```powershell
 flowsignal scan C:\path\to\repo --format sarif --output report.sarif
 flowsignal scan C:\path\to\repo --runtime-trace trace.json --format html --output report.html
+flowsignal scan C:\path\to\repo --cache-dir .flowsignal-cache --format html --output report.html
+flowsignal scan C:\path\to\repo --runtime-trace current.json --previous-runtime-trace previous.json --format html --output comparison.html
 python scripts/benchmark_accuracy.py --check benchmarks/baseline.json
 python scripts/validate_product_features.py
+python scripts/validate_workflow_enhancements.py
 ```
 
-The [accuracy and review guide](docs/ACCURACY_AND_REVIEW.md) documents the trace schema, review expiry, reporting-path controls, benchmark labels, and current validation.
+The [accuracy and review guide](docs/ACCURACY_AND_REVIEW.md) documents the trace schema, review expiry, and reporting-path controls. The [workflow guide](docs/WORKFLOW_ACCURACY.md) has current benchmark and validation results.
+
+To gather a trace, explicitly wrap your selected tests with `from flowsignal.collector import collect` and `with collect(root, output, run_id="test-run"): ...`. Ordinary scans never launch tests. The new HTML queue filters new/expired findings, uncovered boundaries, and unresolved calls, groups them by workflow or reporting owner, and opens their source/reporting paths. Selecting a handler shows modeled branch exits and their instrumentation. Cache reuse is optional: unchanged scans can be faster, while changed-source scans still rebuild global relationships and may be slower than fresh scans.
 
 ## Development
 
-The project can scan and validate itself. Run `python scripts/dogfood.py` to exercise the CLI, compare its core static calls with observed execution, check report consistency, and inject failures. It creates `.artifacts/dogfood/self.html` plus machine-readable evidence. The [current validation record](docs/ACCURACY_AND_REVIEW.md) describes 26 required observed relationships, a labeled accuracy corpus, and runtime import; the [earlier dogfood review](docs/DOGFOOD.md) retains historical evidence. This is behavioral validation with explicit limitations, not a claim of full coverage.
+The project can scan and validate itself. Run `python scripts/dogfood.py` to exercise the CLI, compare its core static calls with observed execution, check report consistency, and inject failures. It creates `.artifacts/dogfood/self.html` plus machine-readable evidence. The [current validation record](docs/WORKFLOW_ACCURACY.md) describes 26 required observed relationships, the expanded accuracy corpus, and runtime collection; the [earlier dogfood review](docs/DOGFOOD.md) retains historical evidence. This is behavioral validation with explicit limitations, not a claim of full coverage.
 
 ```powershell
 $env:PYTHONPATH = "src"

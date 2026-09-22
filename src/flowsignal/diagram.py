@@ -74,6 +74,8 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
             handler.location,
             outcomes=handler.outcomes,
             conditional=handler.conditional,
+            reporting_paths=handler.reporting_paths,
+            paths_truncated=handler.paths_truncated,
         )
         anchor(handler.symbol, handler.location, identity)
         edge(
@@ -280,6 +282,12 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
         )
         if identity in nodes:
             nodes[identity]["findings"].append(finding.id)
+    queue = dict(report.review_queue)
+    finding_nodes = {f: n["id"] for n in nodes.values() for f in n["findings"]}
+    queue["items"] = [
+        dict(row, node=finding_nodes.get(row.get("finding_id"), row["node"]))
+        for row in queue.get("items", [])
+    ]
     choices = [node for node in nodes.values() if node["kind"] == "symbol"]
     choices.sort(
         key=lambda item: (not item["entrypoint"], item["qualified_name"], item["id"])
@@ -332,6 +340,7 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
         "resolution_gaps": list(gaps.values()),
         "runtime": report.runtime,
         "review_history": report.review_history,
+        "review_queue": queue,
     }
 
 

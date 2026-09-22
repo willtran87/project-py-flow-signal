@@ -3,20 +3,22 @@
   "cases": [
     {
       "id": "pycg/functions/call",
-      "split": "evaluation",
-      "path": "corpus/evaluation/pycg/functions/call",
+      "split": "development",
+      "path": "corpus/development/pycg/functions/call",
       "upstream_graph": "callgraph.json",
       "sha256": {
         "callgraph.json": "b0e55c617ad15078bb1f70d549396ef04a26eaa1d9d64b8bc733e6dbe8d2bc14",
         "main.py": "51852f0173b730fc04e8b94f9250ee255f8b3060393e8799cf83145e0ec682db",
         "README.md": "2a8ef35eda8dad9aa8f968784ab270090e7071d238a78db07b25a844626078b8"
       },
-      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "tuning_note": "Previously evaluated; used to guide callable inference, now development only.",
+      "feature": "functions"
     },
     {
       "id": "pycg/functions/imported_call",
-      "split": "evaluation",
-      "path": "corpus/evaluation/pycg/functions/imported_call",
+      "split": "development",
+      "path": "corpus/development/pycg/functions/imported_call",
       "upstream_graph": "callgraph.json",
       "sha256": {
         "callgraph.json": "06723fabe16e0aa9f18a827bb40279f01dd79d713a0ca4a8fbee5566ccffce6f",
@@ -24,43 +26,51 @@
         "README.md": "9350a06e017d7dfe502d418853a4d06e7ed007ad449772e72b03a767d3559524",
         "to_import.py": "a1804c45b507b7cb72f3bd7f9c25fc2665e22ddc05c07cf439d901b23cc01d12"
       },
-      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "tuning_note": "Previously evaluated; used to guide callable inference, now development only.",
+      "feature": "functions"
     },
     {
       "id": "pycg/returns/call",
-      "split": "evaluation",
-      "path": "corpus/evaluation/pycg/returns/call",
+      "split": "development",
+      "path": "corpus/development/pycg/returns/call",
       "upstream_graph": "callgraph.json",
       "sha256": {
         "callgraph.json": "42a7649277306b88424b45e36fe60585f80a349ebcc91a8a790b548231b13e9b",
         "main.py": "5cff7d3a9f83dd8cd39c796ec656746403b65a452cdc6205dd47b77fb54b41b6",
         "README.md": "83d2283da9df631d0ec95a606550cf19106ffd1c334b12d69a627b90ad566d51"
       },
-      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "tuning_note": "Previously evaluated; used to guide callable inference, now development only.",
+      "feature": "returns"
     },
     {
       "id": "pycg/assignments/tuple",
-      "split": "evaluation",
-      "path": "corpus/evaluation/pycg/assignments/tuple",
+      "split": "development",
+      "path": "corpus/development/pycg/assignments/tuple",
       "upstream_graph": "callgraph.json",
       "sha256": {
         "callgraph.json": "12b94af08bf2dd479fb37ff0c121656fbfec630dbd0fb310e01923a76ed8ca9c",
         "main.py": "4c6247fd4379d184e5711e9eeb92164de3ad9bd40124af681f30bd440c9ddb74",
         "README.md": "db68220dab08b7d3c1801e11fe5969df6538043c3703ff48d1ec06dd3b2f3916"
       },
-      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "tuning_note": "Previously evaluated; used to guide callable inference, now development only.",
+      "feature": "assignments"
     },
     {
       "id": "pycg/classes/super_class_return",
-      "split": "evaluation",
-      "path": "corpus/evaluation/pycg/classes/super_class_return",
+      "split": "development",
+      "path": "corpus/development/pycg/classes/super_class_return",
       "upstream_graph": "callgraph.json",
       "sha256": {
         "callgraph.json": "27721bfaf6c621b84802fc7664fe7ab698873066e67ef6abb304ef701481ddc6",
         "main.py": "f06af3931ab10db749d69401062a95fc650c789141479b4a4bcc6b4227faf554",
         "README.md": "35d89de320d8d27654e5900f15c8377b84c9a6e064a7f04df0eb302b09b16add"
       },
-      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "tuning_note": "Previously evaluated; used to guide callable inference, now development only.",
+      "feature": "classes"
     },
     {
       "id": "reported",
@@ -82,7 +92,8 @@
       "sha256": {
         "app.py": "4a770f360931144dcb6d2a81e643f0edd110514b950c88c53220fa385716b80a"
       },
-      "source": "FlowSignal authored regression fixture; not independent validation"
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "feature": "instrumentation"
     },
     {
       "id": "silent",
@@ -110,7 +121,8 @@
       "sha256": {
         "app.py": "5a68f1cc4d77d4018cfc565f50b3c6f5220b7254bf3860c881d810ce5813a9b8"
       },
-      "source": "FlowSignal authored regression fixture; not independent validation"
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "feature": "instrumentation"
     },
     {
       "id": "finally",
@@ -129,7 +141,8 @@
       "sha256": {
         "app.py": "fd210bd8c58c89a0c3829322b7ed36ef3fbd572daa73f3219477a519beef21d9"
       },
-      "source": "FlowSignal authored regression fixture; not independent validation"
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "feature": "instrumentation"
     },
     {
       "id": "traceback",
@@ -148,7 +161,8 @@
       "sha256": {
         "app.py": "f83ab296d5417bf9ba772c580dd7bd41511f75e1be1dfaa3257cc17c58a78a43"
       },
-      "source": "FlowSignal authored regression fixture; not independent validation"
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "feature": "instrumentation"
     },
     {
       "id": "terminal_warning",
@@ -171,7 +185,8 @@
       "sha256": {
         "app.py": "d3096e9871c209841ba0b2c18f3f328947670e71ffb13799a3ea86019227fdcd"
       },
-      "source": "FlowSignal authored regression fixture; not independent validation"
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "feature": "instrumentation"
     },
     {
       "id": "double_reporting",
@@ -195,7 +210,8 @@
       "sha256": {
         "app.py": "25b936ed2ccfafbdeea98394d98c3624e4096f82998ebc07841c4f4b34b88610"
       },
-      "source": "FlowSignal authored regression fixture; not independent validation"
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "feature": "instrumentation"
     },
     {
       "id": "discarded_task",
@@ -219,7 +235,8 @@
       "sha256": {
         "app.py": "29d8a24aa3344c7410a247bfe9521426f9631ea6187fd43e1274642a9ac6f81e"
       },
-      "source": "FlowSignal authored regression fixture; not independent validation"
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "feature": "instrumentation"
     },
     {
       "id": "lifecycle",
@@ -243,7 +260,187 @@
       "sha256": {
         "app.py": "8c20161420fde8a5d71f98a1fbc379d5917f77c03d943741030daf037417b9b9"
       },
-      "source": "FlowSignal authored regression fixture; not independent validation"
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "feature": "instrumentation"
+    },
+    {
+      "id": "pycg/args/call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/args/call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "2684fd4ecef215b4d0c6c14300001207d637e385796f2141cc9e3d04c634a7b6",
+        "main.py": "38b9d67eb821b44cd72d6251c0d534294cd424c91a61ae855924f126c27e3f0c",
+        "README.md": "0110cb194438b47492a42354df86e23e08f4f4d0563af75efaf7d90113c11b98"
+      },
+      "feature": "args",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/args/imported_call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/args/imported_call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "cfc472e3774c5262aece9b050a38c2c48aea4740e1838ad4b4b3797bf85a8059",
+        "main.py": "ba9d4ebb1b01e8aa2f45559ecebc05922892d868f97e81dd12020b7c56d29a47",
+        "README.md": "15b404382e538efee6b2365e424641378cb91050b213ccbf2178868bcaa4777c",
+        "to_import.py": "ca6a7c6e89a8b0949e2615b9f60a0c3f5fabbb7d35ffbb5eea7d6ef3bee96727"
+      },
+      "feature": "args",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/args/param_call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/args/param_call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "5488f105bc5a80d47f6c6a6161900793808fad0c0dbf1e9fedd83f6fe0f68282",
+        "main.py": "28dc411257637b44a5b39060865b40017ce2c723bec4b45df7e53a7e12f145d2",
+        "README.md": "f4f7abd01af2bcea6f55ee6a80b23abe7bf4e9c985756ae7733d1f61c2a0cf98"
+      },
+      "feature": "args",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/kwargs/chained_call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/kwargs/chained_call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "ad8ad22e499036fc299fb8a5a73ab54998976c09beea050334878a04e6429c58",
+        "main.py": "94bbba3480155703359da605a9c81be0964eb43dc5003a4aee5bb32c526bbcf8",
+        "README.md": "24e93a804e162300fbea4ddb873628479c464952feaf4ffbb4b912376fe5a0f4"
+      },
+      "feature": "kwargs",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/classes/base_class_calls_child",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/classes/base_class_calls_child",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "49e990ea2de221833ae8b6335cd3f94f1bf3ac730acb3ecbe106ab538c07069d",
+        "main.py": "8ac1c81af2160449ff03d965c7268552437c9dfbab24e27f1acf2d7cbebb7cbc",
+        "README.md": "03122d212086a198c9355cdf483e7263e39e73a2c6005d4bd822b1c3d6b34f27"
+      },
+      "feature": "classes",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/classes/imported_nested_attr_access",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/classes/imported_nested_attr_access",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "e008a36c4b235e6f032626305d9ee21fbcdacff1ac70a1dedc18b674007d8cef",
+        "main.py": "f99170c65df7aee43d1d40cace2dea68a4e54161fb1321f3f16b6f727d7078bf",
+        "nest/imported.py": "a1804c45b507b7cb72f3bd7f9c25fc2665e22ddc05c07cf439d901b23cc01d12",
+        "README.md": "363eaa0507c1ec5bfec7ae481558c511d87a9dfce69ab0c2d789faf5b8a9bd6a"
+      },
+      "feature": "classes",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/classes/parameter_call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/classes/parameter_call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "f408d53485a4be4e306b30dcd89e192713c97a7fdb494934643d525b2fec0c75",
+        "main.py": "ad5bf1f9fe11a37e11280adbee9bada698de85fb1b5b0c3cf060d41a990c2077",
+        "README.md": "26174041d5dc4e5f3ae1a87a4642c6ea961ab9afe06080795df168239cbd1891"
+      },
+      "feature": "classes",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/imports/relative_import",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/imports/relative_import",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "callgraph.json": "4bb7125237a0e73ba30aa8a4cc8a123d58d7c629ce110a5eed57a747ff23cde8",
+        "main.py": "f523a5ccb5e1e187f87420a4ee5790e43e39f19b26e325a1d455ed13be61c4ee",
+        "README.md": "78ad6f8365cb0ffdbc8a95f1f150c92f04c52e839622925f1dda145d44b5d1b4",
+        "to_import.py": "a1804c45b507b7cb72f3bd7f9c25fc2665e22ddc05c07cf439d901b23cc01d12"
+      },
+      "feature": "imports",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/imports/import_as",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/imports/import_as",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "4bb7125237a0e73ba30aa8a4cc8a123d58d7c629ce110a5eed57a747ff23cde8",
+        "main.py": "dfb4e5c35f8a2d5f91e34be6e93d3ff8239f19d16b5184c5fbe1ffb48f414ea6",
+        "README.md": "cc618b8ea83cafe68e0337fa87b65d784db0ba8db14b0c2236fe08f66dba7f29",
+        "to_import.py": "a1804c45b507b7cb72f3bd7f9c25fc2665e22ddc05c07cf439d901b23cc01d12"
+      },
+      "feature": "imports",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/functions/assigned_call_lit_param",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/functions/assigned_call_lit_param",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "d3f231f0ec8b16781cbf17037c6d97c7f3ee1a335e4f291fa8266ec43d7955a1",
+        "main.py": "1c74bb0045c494eba670288cf214791f9e9eb880ed7f005fe45f6deb3b355c32",
+        "README.md": "e9c6dfe6ef5bd2cb8945060b77179a58015c7a9e1d71f7e8fe3c802d149671cc"
+      },
+      "feature": "functions",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/returns/imported_call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/returns/imported_call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "966824d859cf10cd69a05c83b0b18b9b3258bb00b6a1a432727b8f5f517b5c41",
+        "main.py": "5e2fea83fcac0abc9c3d9189b4a66199e40545882b02500c66bd7f5cbda75f45",
+        "README.md": "4de6d9db5db027d127bc6982c215ae68ac32e22cc86dcfc87e848d0ede2ec9ae",
+        "to_import.py": "172f954cc05fa34221265ab2c1f20a53a7a7648ef58c689e7b3ae409a065cab8"
+      },
+      "feature": "returns",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "pycg/lambdas/parameter_call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/lambdas/parameter_call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "1279c3e1c5d0502875c0f942672444f31be01a2ab4c477d596329a2e4c6b2b31",
+        "main.py": "5004a50ea852b21701e48ac0b0812c896c2e02ce9d0bfd1fae530a9ffaf2af99",
+        "README.md": "8942bc7a99293dcea825f9d47ea4bf6d78597b44029707730891a676ebb4ed70"
+      },
+      "feature": "lambdas",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged; fresh evaluation after callable implementation"
+    },
+    {
+      "id": "workflow-review",
+      "split": "review_pending",
+      "path": "corpus/review_pending/workflow",
+      "config": {
+        "entrypoints": [
+          "entrypoints.*"
+        ]
+      },
+      "sha256": {
+        "storage.py": "298eeb2f7d0dc57e658d08bc1c977bfe1a6926f640046a1b4c73f9ec0eb0be66",
+        "service.py": "078ff80217560739520150020691604a0e4b48932c23818d77adb388e6236e2a",
+        "entrypoints.py": "d6205de78918257d81ce95b4bf1cdd29fbb847b31894794cd4c47ea1d0a2bac9"
+      },
+      "feature": "multi_file_workflow",
+      "source": "FlowSignal-authored realistic workflow; awaiting independent instrumentation adjudication"
     }
   ]
 }

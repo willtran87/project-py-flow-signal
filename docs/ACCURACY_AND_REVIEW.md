@@ -1,5 +1,7 @@
 # Accuracy, reporting paths, and enterprise review exports
 
+Historical increment: see [workflow analysis and review](WORKFLOW_ACCURACY.md) for the current callable/path behavior, expanded corpus, runtime collector, cache, queue, and validation. The five evaluation cases and metrics below describe the previous revision; those cases are now development regressions.
+
 This increment implements all three P1 and all three P2 items. Analysis remains deterministic and framework-neutral. Scanning, diagram generation, SARIF export, and runtime-trace import never execute the target application.
 
 ## P1: Measured accuracy

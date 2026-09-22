@@ -43,6 +43,8 @@ def failure_logs(handler: Handler):
 
 
 def reports_outcome(handler: Handler) -> bool:
+    if handler.path_reporting is not None:
+        return handler.path_reporting
     return any(
         log.level in {"WARNING", "ERROR", "CRITICAL"} and not log.conditional
         for log in handler.logs
@@ -171,6 +173,21 @@ def evaluate(analysis: Analysis) -> list[Finding]:
                 )
             )
         for handler in handlers:
+            if handler.reporting_paths:
+                result.add(
+                    CoverageEvidence(
+                        handler.location,
+                        handler.symbol,
+                        "reporting_paths",
+                        f"{sum(p['reported'] for p in handler.reporting_paths)}/{len(handler.reporting_paths)} modeled handler exits report an outcome."
+                        + (
+                            " Path review truncated; coverage is not established."
+                            if handler.paths_truncated
+                            else " Implicit expression failures and delivery are not verified."
+                        ),
+                        bool(handler.path_reporting),
+                    )
+                )
             result.add(
                 CoverageEvidence(
                     handler.location,
@@ -182,9 +199,8 @@ def evaluate(analysis: Analysis) -> list[Finding]:
                 )
             )
             for log in handler.logs:
-                credited = (
-                    log.level in {"WARNING", "ERROR", "CRITICAL"}
-                    and not log.conditional
+                credited = log.level in {"WARNING", "ERROR", "CRITICAL"} and (
+                    not log.conditional or handler.path_reporting is True
                 )
                 result.add(
                     CoverageEvidence(
@@ -195,24 +211,29 @@ def evaluate(analysis: Analysis) -> list[Finding]:
                         else "conditional_log"
                         if log.conditional
                         else "log_below_warning",
-                        f"{log.level} log is an unconditional outcome signal."
+                        f"{log.level} log participates in reporting across all modeled exits."
+                        if credited and log.conditional
+                        else f"{log.level} log is an unconditional outcome signal."
                         if credited
                         else f"{log.level} log is conditional or below WARNING; it cannot establish handler reporting.",
                         credited,
                     )
                 )
             for signal in handler.reporting_signals:
+                signal_credited = not signal.execution.startswith("deferred_") and (
+                    not signal.conditional or handler.path_reporting is True
+                )
                 result.add(
                     CoverageEvidence(
                         signal.location,
                         signal.symbol,
                         "configured_reporter"
-                        if not signal.conditional
+                        if signal_credited
                         else "conditional_reporter",
                         "Configured outcome contract is credited; delivery is not verified."
-                        if not signal.conditional
+                        if signal_credited
                         else "Conditional reporter cannot establish reporting on every handler outcome.",
-                        not signal.conditional,
+                        signal_credited,
                         signal.owner,
                     )
                 )

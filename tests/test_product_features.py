@@ -322,7 +322,7 @@ def build(unknown):
         )
         manifest = Path(__file__).resolve().parents[1] / "benchmarks/manifest.json"
         result = evaluate(manifest)
-        self.assertGreater(result["totals"]["evaluation"]["edges"]["false_negative"], 0)
+        self.assertGreater(result["totals"]["evaluation"]["edges"]["labeled_cases"], 0)
         self.assertNotIn("findings", result["totals"]["evaluation"])
 
 

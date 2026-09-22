@@ -125,6 +125,16 @@ def export(report):
                     "baseline": report.baseline,
                     "runtimeComparison": report.runtime,
                     "reviewHistory": report.review_history,
+                    "reviewQueue": report.review_queue,
+                    "handlerPaths": [
+                        {
+                            "symbol": h.symbol,
+                            "location": asdict(h.location),
+                            "paths": h.reporting_paths,
+                            "truncated": h.paths_truncated,
+                        }
+                        for h in report.handlers
+                    ],
                     "severityMeaning": "SARIF level maps review priority; recommended logging severity appears only in conditional recommendations.",
                 },
             }

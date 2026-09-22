@@ -31,6 +31,7 @@ class ReceiverIndex:
         self.constructor_types = {}
         self.method_masks = {}
         self.definitions = {d.symbol.id: d for d in analysis.definitions}
+        self.node_definitions = {id(d.node): d for d in analysis.definitions}
         self.methods = {}
         for definition in analysis.definitions:
             if definition.class_name:
@@ -372,6 +373,9 @@ class ReceiverIndex:
         return self.constructor_types[identity]
 
     def callee(self, node, scope: ReceiverScope):
+        value = scope.type_of(node)
+        if value and value.name.startswith("<callable>:"):
+            return self.definitions.get(value.name.removeprefix("<callable>:"))
         method = self.method(node, scope)
         if method:
             return method
@@ -552,8 +556,14 @@ class ReceiverScope(ast.NodeVisitor):
                 "tuple", tuple(self.type_of(item, depth + 1) for item in node.elts)
             )
         if isinstance(node, ast.Name):
-            return self.current().get(node.id)
+            current = self.current()
+            if node.id in current:
+                return current[node.id]
+            return self.reference(node.id)
         if isinstance(node, ast.Attribute):
+            method = self.index.method(node, self)
+            if method:
+                return ReceiverType("<callable>:" + method.symbol.id)
             owner = self.type_of(node.value, depth + 1)
             return self.index.member(owner.name, node.attr) if owner else None
         if isinstance(node, ast.Subscript):
@@ -647,7 +657,21 @@ class ReceiverScope(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node):
         for alias in node.names:
-            self.add(alias.asname or alias.name, None)
+            name = alias.asname or alias.name
+            self.add(name, self.reference(name))
+
+    def reference(self, name):
+        if name not in self.references:
+            return None
+        candidates = self.index.analysis.by_name.get(self.bindings.get(name), [])
+        if len(candidates) == 1:
+            definition = self.index.definitions[candidates[0].id]
+            if (
+                isinstance(definition.node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and not definition.node.decorator_list
+            ):
+                return ReceiverType("<callable>:" + definition.symbol.id)
+        return None
 
     def visit_Global(self, node):
         for name in node.names:
@@ -678,7 +702,15 @@ class ReceiverScope(ast.NodeVisitor):
             self.visit(statement)
 
     def visit_FunctionDef(self, node):
-        self.add(node.name, None)
+        definition = self.index.node_definitions.get(id(node))
+        self.add(
+            node.name,
+            ReceiverType("<callable>:" + definition.symbol.id)
+            if definition
+            and isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and not node.decorator_list
+            else None,
+        )
 
     visit_AsyncFunctionDef = visit_FunctionDef
     visit_ClassDef = visit_FunctionDef

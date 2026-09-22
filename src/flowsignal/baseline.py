@@ -281,6 +281,9 @@ def compare(report: Report, baseline: dict, *, now=None) -> None:
         ),
         "note": "Structural matches tolerate line movement, not symbol/file renames. Absent findings in incomplete scans are unverified.",
     }
+    from .review_queue import attach
+
+    attach(report)
 
 
 def review(

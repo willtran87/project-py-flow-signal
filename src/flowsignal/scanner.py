@@ -657,6 +657,28 @@ class FactVisitor(ast.NodeVisitor):
 
     def resolve(self, node: ast.AST) -> tuple[str, str | None, str]:
         raw = dotted(node)
+        if isinstance(node, (ast.Name, ast.Call, ast.Attribute)) and not any(
+            isinstance(part, ast.Name) and part.id in self.property_shadows
+            for part in ast.walk(node)
+        ):
+            value = self.receiver_scope.type_of(node)
+            if value and value.name.startswith("<callable>:"):
+                definition = self.analysis.receiver_index.definitions[
+                    value.name.removeprefix("<callable>:")
+                ]
+                qualified = definition.symbol.qualified_name
+                if any(
+                    qualified.startswith(m + ".")
+                    for m in self.analysis.ambiguous_modules
+                ):
+                    return qualified, None, "ambiguous"
+                if isinstance(node, ast.Attribute):
+                    return qualified, definition.symbol.id, "inferred_receiver"
+                if not (
+                    isinstance(node, ast.Name)
+                    and substitute(raw, self.bindings) == qualified
+                ):
+                    return qualified, definition.symbol.id, "inferred_callable"
         if isinstance(node, ast.Attribute) and not any(
             isinstance(part, ast.Name) and part.id in self.property_shadows
             for part in ast.walk(node.value)
@@ -1063,6 +1085,9 @@ class FactVisitor(ast.NodeVisitor):
             previous, depth = self.handler, self.handler_depth
             self.handler, self.handler_depth = identity, self.conditional
             self.block(handler.body)
+            from .reporting_paths import analyze
+
+            analyze(self.analysis, self.analysis.handlers[identity], handler.body)
             self.handler, self.handler_depth = previous, depth
         self.block(node.orelse)
         self.block(node.finalbody)
@@ -1219,6 +1244,7 @@ class FactVisitor(ast.NodeVisitor):
                 else "configured resolved API contract",
                 self.conditional > self.handler_depth
                 or call.execution.startswith("deferred_"),
+                execution=call.execution,
             )
             self.analysis.reporting_signals.append(signal)
             if self.handler:
@@ -1316,7 +1342,9 @@ class FactVisitor(ast.NodeVisitor):
                 level,
                 exception_context,
                 self.handler,
-                self.conditional > self.handler_depth,
+                self.conditional > self.handler_depth
+                or call.execution.startswith("deferred_"),
+                execution=call.execution,
             )
             self.analysis.logs.append(log)
             if self.handler:
@@ -1392,7 +1420,12 @@ def excluded(relative: str, config: Config) -> bool:
     )
 
 
-def scan(path: str | Path, config: Config | None = None) -> Report:
+def scan(
+    path: str | Path,
+    config: Config | None = None,
+    *,
+    cache_dir: str | Path | None = None,
+) -> Report:
     config = config or Config()
     config.validate()
     supplied = Path(path).absolute()
@@ -1521,6 +1554,24 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
                 )
             )
             paths = paths[: config.max_files]
+    cache, snapshot_key = None, None
+    if cache_dir is not None:
+        from .cache import ScanCache, digest
+
+        cache = ScanCache(cache_dir, config, root)
+        cache.namespace = digest([cache.namespace, root_packages])
+        if not analysis.diagnostics:
+            try:
+                snapshot_key = cache.snapshot_key(paths, root, config)
+                if snapshot_key:
+                    snapshot_key.extend(
+                        [list(analysis.inventory), analysis.stats["discovery_entries"]]
+                    )
+                cached = cache.report(snapshot_key) if snapshot_key else None
+                if cached is not None:
+                    return cached
+            except (OSError, ValueError):
+                snapshot_key = None
     for source_path in paths:
         relative = source_path.relative_to(root).as_posix()
         record = {"path": relative, "status": "unreadable"}
@@ -1563,7 +1614,11 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
             record.update(bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest())
             encoding, _ = tokenize.detect_encoding(io.BytesIO(raw).readline)
             source = raw.decode(encoding)
-            tree = ast.parse(source, filename=relative)
+            tree = (
+                cache.parse(source, relative, record["sha256"])
+                if cache
+                else ast.parse(source, filename=relative)
+            )
             pending = [(tree, 0)]
             limit_hit = None
             while pending:
@@ -1591,6 +1646,8 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
                     break
                 continue
             module_parts = list(Path(relative).with_suffix("").parts)
+            if cache:
+                cache.store_tree(relative, record["sha256"], tree)
             matched_root = next(
                 (
                     prefix
@@ -1698,7 +1755,7 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
         analysis.diagnostics.append(
             Diagnostic("no_sources", "No readable Python sources were scanned.")
         )
-    return Report(
+    report = Report(
         root=str(root),
         files_scanned=len(analysis.units),
         symbols=[item.symbol for item in analysis.definitions],
@@ -1714,3 +1771,21 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
         coverage=analysis.coverage,
         resolution_gaps=analysis.resolution_gaps,
     )
+    from .review_queue import attach
+
+    attach(report)
+    if cache:
+        if (
+            snapshot_key
+            and report.summary()["status"] == "complete"
+            and snapshot_key[1]
+            == [
+                [r["path"], r.get("sha256")]
+                for r in report.inventory
+                if r.get("status") == "analyzed"
+            ]
+        ):
+            cache.flush_trees()
+            cache.write(snapshot_key, report.to_dict())
+        report.analysis_stats["cache"] = dict(cache.stats)
+    return report

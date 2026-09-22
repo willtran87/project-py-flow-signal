@@ -35,6 +35,27 @@ def compare_trace(report, path: Path):
             "Unsupported runtime trace schema; expected flowsignal-runtime-1"
         )
     files = document.get("files")
+    run = document.get("run", {})
+    if (
+        not isinstance(run, dict)
+        or any(
+            not isinstance(run.get(k, ""), str) or len(run.get(k, "")) > 500
+            for k in ("id", "scenario", "collector", "python")
+        )
+        or ("complete" in run and type(run["complete"]) is not bool)
+    ):
+        raise ValueError("Invalid runtime run metadata")
+    issues = document.get("collection_issues", [])
+    if (
+        not isinstance(issues, list)
+        or len(issues) > 100
+        or any(not isinstance(issue, str) or len(issue) > 8192 for issue in issues)
+        or (
+            "collection_truncated" in document
+            and type(document["collection_truncated"]) is not bool
+        )
+    ):
+        raise ValueError("Invalid runtime collection status")
     pairs = document.get("pairs")
     if (
         not isinstance(files, dict)
@@ -102,6 +123,13 @@ def compare_trace(report, path: Path):
         if r["status"] in {"observed_only", "observed_and_inferred"}
     }
     report.runtime = {
+        "run": {
+            k: run[k]
+            for k in ("id", "scenario", "collector", "python", "complete")
+            if k in run
+        },
+        "collection_truncated": document.get("collection_truncated") is True,
+        "collection_issues": issues,
         "schema_version": "flowsignal-runtime-comparison-1",
         "pairs": records,
         "summary": {
@@ -115,4 +143,29 @@ def compare_trace(report, path: Path):
         },
         "static_not_observed": [list(pair) for pair in sorted(static - trusted)],
         "note": "Externally supplied observations are not authenticated. Matching source hashes establish snapshot agreement, not complete execution coverage. Static findings and coverage decisions are unchanged.",
+    }
+
+
+def compare_runs(report, previous):
+    current = report.runtime
+    compare_trace(report, previous)
+    prior = report.runtime
+    report.runtime = current
+
+    def observed(runtime):
+        return {
+            (p["caller"], p["callee"])
+            for p in runtime["pairs"]
+            if p["status"] in {"observed_only", "observed_and_inferred"}
+        }
+
+    before, after = observed(prior), observed(current)
+    current["run_comparison"] = {
+        "previous_run": prior["run"],
+        "current_run": current["run"],
+        "added": sorted(after - before),
+        "retained": sorted(before & after),
+        "not_seen_again": sorted(before - after),
+        "previous_summary": prior["summary"],
+        "note": "Only observations matching this scan's source snapshot are compared. Not seen again is not proof of removal or unreachability.",
     }

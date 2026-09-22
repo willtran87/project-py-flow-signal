@@ -1,6 +1,8 @@
 # Enterprise readiness assessment
 
-Current update: [accuracy and review](ACCURACY_AND_REVIEW.md) adds all six P1/P2 items. The small independent call benchmark reports 3 correct pairs and 6 misses; it supports regression checks, not an enterprise accuracy claim. All four previously indexed self-dogfood omissions are now required passing checks.
+Current update: [workflow analysis and review](WORKFLOW_ACCURACY.md) adds callable-value inference, handler-exit reporting paths, expanded accuracy evaluation, explicit runtime collection, opt-in caching, and a workflow queue. The fresh call evaluation reports 14 correct pairs and 11 misses; independent instrumentation review remains pending. It supports regression checks, not an enterprise accuracy claim.
+
+Previous update: [accuracy and review](ACCURACY_AND_REVIEW.md) records the earlier six P1/P2 items. Its five evaluation cases have since moved to development after implementation tuning; its measurements remain historical.
 
 Earlier update: [supervision and uncertainty](SUPERVISION_AND_UNCERTAINTY.md) adds opt-in Windows/Linux worker limits for scan/render work and actionable unresolved-call context. Earlier workload measurements below remain historical.
 

@@ -1,0 +1,39 @@
+{
+  "schema_version": "flowsignal-label-review-1",
+  "rules": {
+    "FS001": "Possible unreported exception outcome",
+    "FS002": "Finally block can suppress an active exception",
+    "FS003": "Failure at an operation boundary is logged below ERROR",
+    "FS004": "Rethrown failure may be logged twice",
+    "FS005": "Failure-sensitive boundary lacks recognized failure instrumentation",
+    "FS006": "Exception log lacks recognized traceback context",
+    "FS007": "Background task handle is discarded",
+    "FS008": "Configured operation has no INFO lifecycle signal"
+  },
+  "cases": [
+    {
+      "id": "workflow-review",
+      "sha256": {
+        "storage.py": "298eeb2f7d0dc57e658d08bc1c977bfe1a6926f640046a1b4c73f9ec0eb0be66",
+        "service.py": "078ff80217560739520150020691604a0e4b48932c23818d77adb388e6236e2a",
+        "entrypoints.py": "d6205de78918257d81ce95b4bf1cdd29fbb847b31894794cd4c47ea1d0a2bac9"
+      },
+      "config": {
+        "entrypoints": [
+          "entrypoints.*"
+        ]
+      },
+      "sources": {
+        "storage.py": "import json\nfrom pathlib import Path\ndef read_order(path):\n    return json.loads(Path(path).read_text())\ndef save_order(path, payload):\n    Path(path).write_text(json.dumps(payload))\n",
+        "service.py": "import logging\nfrom storage import read_order, save_order\ndef process(path, recover):\n    try:\n        order = read_order(path)\n    except Exception:\n        if recover:\n            logging.warning('using empty order', exc_info=True)\n            order = {}\n        else:\n            logging.exception('order unavailable')\n            raise\n    save_order(path, order)\ndef quiet(path):\n    try: return read_order(path)\n    except Exception: return {}\n",
+        "entrypoints.py": "from service import process, quiet\ndef checkout(path): return process(path, False)\ndef scheduled(path): return process(path, True)\ndef preview(path): return quiet(path)\n"
+      },
+      "completed": false,
+      "reviewer": "",
+      "rationale": "",
+      "findings": null,
+      "owners": null
+    }
+  ],
+  "instructions": "Review source independently of scanner output. Fill complete lists: findings [[rule_id, qualified_symbol, line], ...], owners [[boundary_function, reporting_function], ...]. Empty lists explicitly label absence. Supply reviewer, rationale, and completed=true. Identity is declared, not authenticated. Do not change source hashes/config. Unsupported business assumptions belong in rationale."
+}
