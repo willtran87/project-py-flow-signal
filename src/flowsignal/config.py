@@ -45,6 +45,8 @@ class Config:
     max_ast_nodes: int = 2_000_000
     max_ast_depth: int = 120
     max_graph_steps: int = 1_000_000
+    max_type_steps: int = 1_000_000
+    max_resolution_steps: int = 100_000
     max_discovery_entries: int = 100_000
 
     def validate(self) -> None:
@@ -75,6 +77,8 @@ class Config:
             ("max_ast_nodes", 20_000_000),
             ("max_ast_depth", 200),
             ("max_graph_steps", 10_000_000),
+            ("max_type_steps", 10_000_000),
+            ("max_resolution_steps", 10_000_000),
             ("max_discovery_entries", 10_000_000),
         ):
             value = getattr(self, name)

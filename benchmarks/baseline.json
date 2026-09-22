@@ -1,0 +1,544 @@
+{
+  "schema_version": "flowsignal-accuracy-results-1",
+  "totals": {
+    "development": {
+      "edges": {
+        "labeled_cases": 8,
+        "true_positive": 4,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "findings": {
+        "labeled_cases": 8,
+        "true_positive": 8,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "owners": {
+        "labeled_cases": 8,
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      }
+    },
+    "evaluation": {
+      "edges": {
+        "labeled_cases": 5,
+        "true_positive": 3,
+        "false_positive": 0,
+        "false_negative": 6,
+        "precision": 1.0,
+        "recall": 0.3333333333333333
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "pycg/functions/call",
+      "split": "evaluation",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/functions/imported_call",
+      "split": "evaluation",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "metrics": {
+        "edges": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 1,
+          "precision": null,
+          "recall": 0.0,
+          "unexpected": [],
+          "missed": [
+            [
+              "main",
+              "to_import.func"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/returns/call",
+      "split": "evaluation",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "unexpected": [],
+          "missed": [
+            [
+              "main",
+              "main.return_func"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/assignments/tuple",
+      "split": "evaluation",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "metrics": {
+        "edges": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 3,
+          "precision": null,
+          "recall": 0.0,
+          "unexpected": [],
+          "missed": [
+            [
+              "main",
+              "main.func1"
+            ],
+            [
+              "main",
+              "main.func2"
+            ],
+            [
+              "main",
+              "main.func3"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "pycg/classes/super_class_return",
+      "split": "evaluation",
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "unexpected": [],
+          "missed": [
+            [
+              "main",
+              "main.A.func1"
+            ]
+          ]
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": [
+        "findings",
+        "owners"
+      ]
+    },
+    {
+      "id": "reported",
+      "split": "development",
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "findings": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        },
+        "owners": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {},
+      "unlabeled": []
+    },
+    {
+      "id": "silent",
+      "split": "development",
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "findings": {
+          "true_positive": 2,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "owners": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {
+        "FS001": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "FS005": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "unlabeled": []
+    },
+    {
+      "id": "finally",
+      "split": "development",
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "metrics": {
+        "edges": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        },
+        "findings": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "owners": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {
+        "FS002": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "unlabeled": []
+    },
+    {
+      "id": "traceback",
+      "split": "development",
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "metrics": {
+        "edges": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        },
+        "findings": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "owners": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {
+        "FS006": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "unlabeled": []
+    },
+    {
+      "id": "terminal_warning",
+      "split": "development",
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "metrics": {
+        "edges": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        },
+        "findings": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "owners": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {
+        "FS003": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "unlabeled": []
+    },
+    {
+      "id": "double_reporting",
+      "split": "development",
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "findings": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "owners": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {
+        "FS004": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "unlabeled": []
+    },
+    {
+      "id": "discarded_task",
+      "split": "development",
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "metrics": {
+        "edges": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "findings": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "owners": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {
+        "FS007": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "unlabeled": []
+    },
+    {
+      "id": "lifecycle",
+      "split": "development",
+      "source": "FlowSignal authored regression fixture; not independent validation",
+      "metrics": {
+        "edges": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        },
+        "findings": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        },
+        "owners": {
+          "true_positive": 0,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": null,
+          "recall": null,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "findings_by_rule": {
+        "FS008": {
+          "true_positive": 1,
+          "false_positive": 0,
+          "false_negative": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "unexpected": [],
+          "missed": []
+        }
+      },
+      "unlabeled": []
+    }
+  ],
+  "note": "Small fixed corpus, not enterprise accuracy. Evaluation has independent call labels only; unlabeled findings/owners are not scored. Missing expected symbols count as misses. Pairs are unique, not call-site counts. No target code was executed."
+}

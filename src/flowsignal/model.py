@@ -49,6 +49,9 @@ class Finding:
     baseline_status: str | None = None
     review_status: str = "active"
     review_reason: str | None = None
+    review_owner: str | None = None
+    review_expires: str | None = None
+    review_expired: bool = False
 
 
 @dataclass
@@ -72,6 +75,8 @@ INCOMPLETE_CODES = frozenset(
         "ast_nodes_limit",
         "ast_depth_limit",
         "graph_work_limit",
+        "type_work_limit",
+        "resolution_context_limit",
         "source_root_invalid",
         "duplicate_module",
         "discovery_limit",
@@ -88,6 +93,27 @@ class Symbol:
     kind: str
     entrypoint: bool = False
     entrypoint_basis: str | None = None
+
+
+@dataclass
+class CoverageEvidence:
+    location: Location
+    symbol: str
+    reason: str
+    message: str
+    credited: bool = False
+    owner: str | None = None
+    call_id: str | None = None
+
+
+@dataclass
+class CoverageDecision:
+    call_id: str
+    symbol: str
+    location: Location
+    status: str
+    evidence: list[CoverageEvidence]
+    truncated: bool = False
 
 
 @dataclass
@@ -108,6 +134,7 @@ class Call:
     trace_failure_coverage: bool = False
     propagation_uncertain: bool = False
     blocked_handler_ids: list[str] = field(default_factory=list)
+    trace_evidence: list[CoverageEvidence] = field(default_factory=list)
 
 
 @dataclass
@@ -170,7 +197,22 @@ LIMITATIONS = [
     "Generator execution timing, ExceptionGroup splitting, implicit failures, and context-manager suppression are not modeled fully.",
     "Configured outcome reporters are user-declared contracts; successful publication, consumption and delivery are not verified.",
     "Property edges infer supported read-only getters from receiver annotations and simple assignments; inherited descriptors, setters and dynamic attribute hooks remain limited.",
+    "Receiver fields, constructor arguments and fixed-arity tuple returns use compatible indexed evidence. Single known inheritance chains and zero-argument super are supported conservatively; multiple inheritance, runtime mutation, callable returns and external factories remain limited. Annotations and unseen constructor sites are assumptions.",
+    "Boundary coverage explains the same bounded decision as FS005. Recognized means static reporting evidence, not proven delivery or coverage of unresolved callers; explanations retain at most 64 evidence items.",
 ]
+
+
+@dataclass
+class ResolutionGap:
+    call_id: str
+    symbol: str
+    location: Location
+    expression: str
+    reason: str
+    explanation: str
+    action: str
+    entrypoints: list[str] = field(default_factory=list)
+    context_truncated: bool = False
 
 
 @dataclass
@@ -191,6 +233,10 @@ class Report:
     limitations: list[str] = field(default_factory=lambda: list(LIMITATIONS))
     reporting_signals: list[ReportingSignal] = field(default_factory=list)
     baseline: dict[str, Any] | None = None
+    coverage: list[CoverageDecision] = field(default_factory=list)
+    resolution_gaps: list[ResolutionGap] = field(default_factory=list)
+    review_history: list[dict[str, Any]] = field(default_factory=list)
+    runtime: dict[str, Any] | None = None
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -205,6 +251,9 @@ class Report:
             ),
             "ambiguous_calls": sum(
                 call.resolution == "ambiguous" for call in self.calls
+            ),
+            "unresolved_reasons": dict(
+                sorted(Counter(g.reason for g in self.resolution_gaps).items())
             ),
             "resolution_counts": dict(
                 sorted(Counter(call.resolution for call in self.calls).items())
@@ -221,6 +270,9 @@ class Report:
             "findings": len(self.findings),
             "diagnostics": len(self.diagnostics),
             "reporting_signals": len(self.reporting_signals),
+            "boundary_coverage": dict(
+                sorted(Counter(c.status for c in self.coverage).items())
+            ),
             "dismissed_findings": sum(
                 f.review_status == "dismissed" for f in self.findings
             ),

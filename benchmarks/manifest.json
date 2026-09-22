@@ -1,0 +1,249 @@
+{
+  "schema_version": "flowsignal-accuracy-1",
+  "cases": [
+    {
+      "id": "pycg/functions/call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/functions/call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "b0e55c617ad15078bb1f70d549396ef04a26eaa1d9d64b8bc733e6dbe8d2bc14",
+        "main.py": "51852f0173b730fc04e8b94f9250ee255f8b3060393e8799cf83145e0ec682db",
+        "README.md": "2a8ef35eda8dad9aa8f968784ab270090e7071d238a78db07b25a844626078b8"
+      },
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+    },
+    {
+      "id": "pycg/functions/imported_call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/functions/imported_call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "06723fabe16e0aa9f18a827bb40279f01dd79d713a0ca4a8fbee5566ccffce6f",
+        "main.py": "7fcba8cc6d6f7c6ab4c9f7e1b66f371d4cfa29cca866029ea43629d7af1bb23e",
+        "README.md": "9350a06e017d7dfe502d418853a4d06e7ed007ad449772e72b03a767d3559524",
+        "to_import.py": "a1804c45b507b7cb72f3bd7f9c25fc2665e22ddc05c07cf439d901b23cc01d12"
+      },
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+    },
+    {
+      "id": "pycg/returns/call",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/returns/call",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "42a7649277306b88424b45e36fe60585f80a349ebcc91a8a790b548231b13e9b",
+        "main.py": "5cff7d3a9f83dd8cd39c796ec656746403b65a452cdc6205dd47b77fb54b41b6",
+        "README.md": "83d2283da9df631d0ec95a606550cf19106ffd1c334b12d69a627b90ad566d51"
+      },
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+    },
+    {
+      "id": "pycg/assignments/tuple",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/assignments/tuple",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "12b94af08bf2dd479fb37ff0c121656fbfec630dbd0fb310e01923a76ed8ca9c",
+        "main.py": "4c6247fd4379d184e5711e9eeb92164de3ad9bd40124af681f30bd440c9ddb74",
+        "README.md": "db68220dab08b7d3c1801e11fe5969df6538043c3703ff48d1ec06dd3b2f3916"
+      },
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+    },
+    {
+      "id": "pycg/classes/super_class_return",
+      "split": "evaluation",
+      "path": "corpus/evaluation/pycg/classes/super_class_return",
+      "upstream_graph": "callgraph.json",
+      "sha256": {
+        "callgraph.json": "27721bfaf6c621b84802fc7664fe7ab698873066e67ef6abb304ef701481ddc6",
+        "main.py": "f06af3931ab10db749d69401062a95fc650c789141479b4a4bcc6b4227faf554",
+        "README.md": "35d89de320d8d27654e5900f15c8377b84c9a6e064a7f04df0eb302b09b16add"
+      },
+      "source": "PyCG 8d5dc40837803beef1d8d379fbf2cdad6cd94641; upstream labels unchanged"
+    },
+    {
+      "id": "reported",
+      "split": "development",
+      "path": "corpus/development/reported",
+      "edges": [
+        [
+          "app.run",
+          "app.fetch"
+        ]
+      ],
+      "findings": [],
+      "owners": [
+        [
+          "app.fetch",
+          "app.run"
+        ]
+      ],
+      "sha256": {
+        "app.py": "4a770f360931144dcb6d2a81e643f0edd110514b950c88c53220fa385716b80a"
+      },
+      "source": "FlowSignal authored regression fixture; not independent validation"
+    },
+    {
+      "id": "silent",
+      "split": "development",
+      "path": "corpus/development/silent",
+      "edges": [
+        [
+          "app.run",
+          "app.fetch"
+        ]
+      ],
+      "findings": [
+        [
+          "FS001",
+          "app.run",
+          7
+        ],
+        [
+          "FS005",
+          "app.fetch",
+          3
+        ]
+      ],
+      "owners": [],
+      "sha256": {
+        "app.py": "5a68f1cc4d77d4018cfc565f50b3c6f5220b7254bf3860c881d810ce5813a9b8"
+      },
+      "source": "FlowSignal authored regression fixture; not independent validation"
+    },
+    {
+      "id": "finally",
+      "split": "development",
+      "path": "corpus/development/finally",
+      "config": {},
+      "findings": [
+        [
+          "FS002",
+          "app.run",
+          4
+        ]
+      ],
+      "edges": [],
+      "owners": [],
+      "sha256": {
+        "app.py": "fd210bd8c58c89a0c3829322b7ed36ef3fbd572daa73f3219477a519beef21d9"
+      },
+      "source": "FlowSignal authored regression fixture; not independent validation"
+    },
+    {
+      "id": "traceback",
+      "split": "development",
+      "path": "corpus/development/traceback",
+      "config": {},
+      "findings": [
+        [
+          "FS006",
+          "app.run",
+          5
+        ]
+      ],
+      "edges": [],
+      "owners": [],
+      "sha256": {
+        "app.py": "f83ab296d5417bf9ba772c580dd7bd41511f75e1be1dfaa3257cc17c58a78a43"
+      },
+      "source": "FlowSignal authored regression fixture; not independent validation"
+    },
+    {
+      "id": "terminal_warning",
+      "split": "development",
+      "path": "corpus/development/terminal_warning",
+      "config": {
+        "entrypoints": [
+          "app.run"
+        ]
+      },
+      "findings": [
+        [
+          "FS003",
+          "app.run",
+          4
+        ]
+      ],
+      "edges": [],
+      "owners": [],
+      "sha256": {
+        "app.py": "d3096e9871c209841ba0b2c18f3f328947670e71ffb13799a3ea86019227fdcd"
+      },
+      "source": "FlowSignal authored regression fixture; not independent validation"
+    },
+    {
+      "id": "double_reporting",
+      "split": "development",
+      "path": "corpus/development/double_reporting",
+      "config": {},
+      "findings": [
+        [
+          "FS004",
+          "app.inner",
+          4
+        ]
+      ],
+      "edges": [
+        [
+          "app.outer",
+          "app.inner"
+        ]
+      ],
+      "owners": [],
+      "sha256": {
+        "app.py": "25b936ed2ccfafbdeea98394d98c3624e4096f82998ebc07841c4f4b34b88610"
+      },
+      "source": "FlowSignal authored regression fixture; not independent validation"
+    },
+    {
+      "id": "discarded_task",
+      "split": "development",
+      "path": "corpus/development/discarded_task",
+      "config": {},
+      "findings": [
+        [
+          "FS007",
+          "app.run",
+          4
+        ]
+      ],
+      "edges": [
+        [
+          "app.run",
+          "app.worker"
+        ]
+      ],
+      "owners": [],
+      "sha256": {
+        "app.py": "29d8a24aa3344c7410a247bfe9521426f9631ea6187fd43e1274642a9ac6f81e"
+      },
+      "source": "FlowSignal authored regression fixture; not independent validation"
+    },
+    {
+      "id": "lifecycle",
+      "split": "development",
+      "path": "corpus/development/lifecycle",
+      "config": {
+        "entrypoints": [
+          "app.run"
+        ],
+        "lifecycle_info": true
+      },
+      "findings": [
+        [
+          "FS008",
+          "app.run",
+          1
+        ]
+      ],
+      "edges": [],
+      "owners": [],
+      "sha256": {
+        "app.py": "8c20161420fde8a5d71f98a1fbc379d5917f77c03d943741030daf037417b9b9"
+      },
+      "source": "FlowSignal authored regression fixture; not independent validation"
+    }
+  ]
+}

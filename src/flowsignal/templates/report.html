@@ -13,6 +13,8 @@
 @media(max-width:780px){.shell{padding:16px}.workspace{grid-template-columns:minmax(0,1fr)}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{padding:11px 13px}.metric strong{font-size:23px}.intro{margin:24px 0 18px}.brand small{font-size:9px;letter-spacing:1px;margin-left:0;padding-left:10px}.viewport{height:520px}.graph-heading{flex-wrap:wrap}.inspector-body{max-height:none}.toolbar{gap:10px}.scope-note{padding:13px 16px}.footer{padding:14px 16px}h1{letter-spacing:-.7px}.subtitle{font-size:13px}}
 @media print{.shell{padding:0}.tools,.toolbar,.download,.footer{display:none}.workspace{display:block}.viewport{height:auto;overflow:visible;background:white}.viewport svg{width:100%!important;height:auto!important}.inspector{margin-top:20px}.inspector-body{max-height:none}.metrics{margin:12px 0}}
 .scan-status{padding:12px 18px;margin:0 0 20px;border:1px solid var(--line);border-radius:8px;background:white;font-size:12px;color:var(--muted)}.scan-status.incomplete{border-color:#d6a551;background:var(--amber-bg);color:#68440d}
+.coverage-evidence{border-left-color:#8290a2;background:#f3f5f8}.coverage-evidence.credited{border-left-color:#41886d;background:#f0f8f3}
+.gap-controls{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0}.gap-controls label{display:flex;flex-direction:column;gap:5px;max-width:100%;min-width:0}.gap-controls select{max-width:100%}.gap-card{padding:14px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.gap-card p{margin:6px 0}.gap-card button{width:auto;max-width:100%;border:1px solid var(--line);border-radius:6px}
 </style>
 </head>
 <body>
@@ -23,17 +25,20 @@
 </header>
 <p id="scan-status" class="scan-status" role="status"></p>
 <section id="baseline-review" class="scan-status" hidden aria-label="Baseline comparison"><p id="baseline-summary"></p><details><summary>Resolved and unverified findings</summary><div id="baseline-changes"></div></details></section>
+<section id="runtime-review" class="scan-status" hidden aria-label="Runtime comparison"></section>
 <main class="workspace">
 <section class="graph-panel" aria-labelledby="graph-title">
 <div class="toolbar"><div class="search"><label for="search">FOCUS ON A FUNCTION OR MODULE</label><input type="search" id="search" autocomplete="off" placeholder="Search a symbol or file…" aria-controls="results"><div id="results" class="results" aria-label="Matching symbols"></div></div><label class="check"><input id="callers" type="checkbox" checked>Include callers</label><div class="limit"><label for="limit">NODE LIMIT</label><select id="limit" aria-label="Diagram node limit"></select></div></div>
+<div class="toolbar"><button id="clear-path" class="download" type="button" hidden>Clear reporting path</button><label class="check" id="runtime-control" hidden><input id="runtime-overlay" type="checkbox">Show imported observations</label><span id="path-status" class="empty" role="status"></span></div>
 <div class="graph-heading"><div><p class="eyebrow">Possible execution paths</p><h2 id="graph-title">Loading diagram…</h2></div><div class="tools" aria-label="Diagram controls"><button id="zoom-out" type="button" aria-label="Zoom out">−</button><button id="fit" type="button">Fit view</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button></div></div>
-<div class="legend" aria-label="Diagram legend"><span><i class="swatch"></i>Existing signal</span><span><i class="swatch amber"></i>Recommendation</span><span><i class="swatch gray"></i>No signal recognized</span><span><i class="line"></i>Call</span><span><i class="line dashed"></i>Handler candidate / scope</span><span><i class="line deferred"></i>Deferred execution</span></div>
+<div class="legend" aria-label="Diagram legend"><span><i class="swatch"></i>Existing signal</span><span><i class="swatch amber"></i>Recommendation</span><span><i class="swatch gray"></i>No signal recognized</span><span><i class="line"></i>Call</span><span><i class="line dashed"></i>Handler candidate / scope</span><span><i class="line deferred"></i>Deferred execution</span><span id="runtime-legend" hidden><i class="line" style="border-color:#8054a3"></i>Imported observation (see edge details)</span></div>
 <div id="viewport" class="viewport" tabindex="0" aria-label="Scrollable execution diagram"><svg id="graph" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Possible static execution paths"></svg></div>
 <div class="view-caption"><span id="view-status" role="status" aria-live="polite"></span><span>Scroll to explore · select a node for evidence</span><button class="download" id="download" type="button">Download this view as SVG ↓</button></div>
 <p class="scope-note"><strong>Presence is not coverage.</strong> Green marks a recognized log or trace scope. Amber marks conditional advice. Arrows show possible relationships, not a runtime timeline or proven exception propagation.</p>
 </section>
 <aside class="inspector" aria-labelledby="detail-title"><div class="inspector-head"><p class="eyebrow" id="detail-kind">Source details</p><h2 id="detail-title">Select a node</h2><div class="location" id="detail-location"></div></div><div id="detail" class="inspector-body"></div></aside>
 </main>
+<section class="footer" id="gap-review" hidden aria-label="Unresolved call review"><details><summary id="gap-summary">Unresolved call review</summary><p>These calls have no established target. Entrypoints are possible callers through known edges; omitted or unresolved paths can hide additional callers.</p><div class="gap-controls"><label for="gap-reason">Filter by reason<select id="gap-reason"></select></label><label for="gap-entrypoint">Filter by potential entrypoint<select id="gap-entrypoint"></select></label></div><p id="gap-count" role="status" aria-live="polite"></p><div id="gap-list"></div></details></section>
 <section class="footer" aria-label="Analysis scope"><details id="scope"><summary id="scope-summary">Analysis scope &amp; limitations</summary><div id="scope-content"></div></details><span id="report-path" class="report-path"></span></section>
 <noscript>This interactive report needs JavaScript to draw the diagram. Generate a Mermaid or text report with the CLI for a script-free alternative.</noscript>
 </div>
@@ -44,12 +49,15 @@ const data=JSON.parse(document.getElementById('flow-data').textContent);
 const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
 const byId=new Map(data.nodes.map(n=>[n.id,n]));
 const symbols=data.nodes.filter(n=>n.kind==='symbol').sort((a,b)=>a.title.localeCompare(b.title)||a.id.localeCompare(b.id));
+const runtimeNeighbors=new Map();
 const owned=new Map(),outgoing=new Map(),incoming=new Map(),distance=new Map();
 function append(map,key,value){if(!map.has(key))map.set(key,[]);map.get(key).push(value)}
+for(const e of data.edges)if(e.kind==='runtime'){append(runtimeNeighbors,e.source,e.target);append(runtimeNeighbors,e.target,e.source)}
 for(const n of data.nodes)if(n.kind!=='symbol')append(owned,n.symbol,n.id);
 for(const e of data.edges){const source=byId.get(e.source),target=byId.get(e.target);if(['call','deferred'].includes(e.kind)&&target?.kind==='symbol'){append(outgoing,source.symbol,e.target);append(incoming,e.target,source.symbol);distance.set(source.symbol+'\0'+e.target,source.kind==='symbol'?1:2)}}
+let activeCoverage=null;
 let focus=data.focus,selected=null,view={nodes:[],edges:[]},zoom=1,dimensions={width:800,height:500};
-const colors={call:'#8194ab',deferred:'#747fac',exception:'#a77938',scope:'#afb8c4'};
+const colors={call:'#8194ab',deferred:'#747fac',exception:'#a77938',scope:'#afb8c4',runtime:'#8054a3'};
 const nodeWidth=280,nodeHeight=156;
 function element(tag,text,cls,parent){const el=document.createElement(tag);if(text!==null&&text!==undefined)el.textContent=text;if(cls)el.className=cls;if(parent)parent.append(el);return el}
 function svg(tag,attrs={},text,parent){const el=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))el.setAttribute(k,String(v));if(text!==undefined)el.textContent=text;if(parent)parent.append(el);return el}
@@ -57,13 +65,17 @@ function place(loc){return `${loc.file}:${loc.line}`}
 function shorten(text,max=34){return text.length>max?text.slice(0,max-1)+'…':text}
 function recommendationLabels(node){const labels=new Set();for(const id of node.findings)for(const r of data.findings[id].recommendations)labels.add(r.level||({trace:'TRACE',no_additional_log:'LOG OWNER',enrich_existing_log:'CONTEXT'}[r.kind]||r.kind.toUpperCase()));return [...labels]}
 function chooseView(){
+ const path=byId.get(activeCoverage)?.coverage_path;
+ if(path){const ids=new Set(path.nodes.slice(0,Number($('limit').value))),edges=new Set(path.edges);return{nodes:[...ids].map(id=>byId.get(id)),edges:data.edges.filter(e=>edges.has(e.id)&&ids.has(e.source)&&ids.has(e.target)),omitted:path.nodes.length-ids.size,outside:data.nodes.length-path.nodes.length}}
+
  const reached=new Set(),order=[],pending=focus?[focus]:[],include=$('callers').checked;let cursor=0;
  while(cursor<pending.length){const id=pending[cursor++];if(reached.has(id))continue;reached.add(id);order.push(id);
  for(const child of owned.get(id)||[])if(!reached.has(child)){reached.add(child);order.push(child)}
- const adjacent=[...(outgoing.get(id)||[]),...(include?(incoming.get(id)||[]):[])];
+ const runtime=$('runtime-overlay').checked?(runtimeNeighbors.get(id)||[]):[];
+ const adjacent=[...runtime,...(outgoing.get(id)||[]),...(include?(incoming.get(id)||[]):[])];
  pending.push(...[...new Set(adjacent)].filter(id=>!reached.has(id)).sort());}
  const limit=Number($('limit').value),ids=new Set(order.slice(0,limit));
- return{nodes:order.slice(0,limit).map(id=>byId.get(id)),edges:data.edges.filter(e=>ids.has(e.source)&&ids.has(e.target)),omitted:Math.max(0,order.length-limit),outside:data.nodes.length-order.length};
+ return{nodes:order.slice(0,limit).map(id=>byId.get(id)),edges:data.edges.filter(e=>(e.kind!=='runtime'||$('runtime-overlay').checked)&&ids.has(e.source)&&ids.has(e.target)),omitted:Math.max(0,order.length-limit),outside:data.nodes.length-order.length};
 }
 function positionNodes(){
  const layer=new Map(),pending=[];if(focus){layer.set(focus,0);pending.push(focus)}let cursor=0;
@@ -77,6 +89,7 @@ function positionNodes(){
  dimensions={width,height};return positions;
 }
 function renderGraph(){
+ const route=byId.get(activeCoverage)?.coverage_path;$('clear-path').hidden=!route;$('path-status').textContent=route?route.note+(route.truncated?' Explanation truncated; some path evidence is omitted.':''):'';
  view=chooseView();const graph=$('graph');graph.replaceChildren();const positions=positionNodes();
  graph.setAttribute('viewBox',`0 0 ${dimensions.width} ${dimensions.height}`);graph.setAttribute('width',dimensions.width);graph.setAttribute('height',dimensions.height);
  svg('title',{},'Possible execution paths with recognized instrumentation and conditional recommendations',graph);
@@ -93,7 +106,7 @@ function renderGraph(){
  if(e.source===e.target){d=`M ${a.x+nodeWidth-36} ${a.y} C ${a.x+nodeWidth+36} ${a.y-48}, ${a.x+nodeWidth+36} ${a.y-48}, ${a.x+nodeWidth} ${a.y+38}`}
  else if(b.x>a.x){const sx=a.x+nodeWidth,sy=a.y+nodeHeight/2,tx=b.x,ty=b.y+nodeHeight/2,m=(sx+tx)/2;d=`M ${sx} ${sy} C ${m} ${sy}, ${m} ${ty}, ${tx} ${ty}`}
  else{const sx=a.x+nodeWidth/2,sy=a.y+nodeHeight,tx=b.x+nodeWidth/2,ty=b.y+nodeHeight,bend=Math.max(sy,ty)+35+(index%3)*10;d=`M ${sx} ${sy} C ${sx} ${bend}, ${tx} ${bend}, ${tx} ${ty}`}
- const path=svg('path',{d,fill:'none',stroke:colors[e.kind],'stroke-width':e.kind==='scope'?1.3:1.7,'stroke-dasharray':e.kind==='call'?'none':e.kind==='deferred'?'3 5':'6 5','marker-end':`url(#arrow-${e.kind})`},undefined,edgeLayer);
+ const path=svg('path',{d,fill:'none',stroke:colors[e.kind],'data-edge':e.id,'stroke-width':activeCoverage?3:e.kind==='runtime'?2.6:e.kind==='scope'?1.3:1.7,'stroke-dasharray':e.kind==='call'?'none':e.kind==='deferred'?'3 5':'6 5','marker-end':`url(#arrow-${e.kind})`},undefined,edgeLayer);
  svg('title',{},`${e.label} · ${place(e.location)}${e.resolution?' · '+e.resolution:''}`,path);
  }
  for(const node of view.nodes){const {x,y}=positions.get(node.id),suggested=node.findings.length>0,existing=node.existing.length>0;
@@ -101,7 +114,8 @@ function renderGraph(){
  svg('title',{},`${node.title}\n${place(node.location)}\nSelect to inspect existing signals and recommendation conditions.`,g);
  svg('rect',{x:0,y:2,width:nodeWidth,height:nodeHeight,rx:10,fill:'#20334c',opacity:.04},undefined,g);
  svg('rect',{class:'card',width:nodeWidth,height:nodeHeight,rx:10,fill:'#fff',stroke:'#ccd6e0','stroke-width':1.3},undefined,g);
- const type=node.kind==='symbol'?(node.entrypoint?'ENTRYPOINT':node.symbol_kind==='module'?'MODULE':'FUNCTION'):node.kind==='handler'?'EXCEPTION HANDLER':node.kind==='task'?'BACKGROUND TASK':(node.boundary||'EXTERNAL').toUpperCase();
+ const role=route?.owners.includes(node.id)?'REPORTING OWNER':route?.barriers.includes(node.id)?'REPORTING BARRIER':null;
+ const type=role||(node.kind==='symbol'?(node.entrypoint?'ENTRYPOINT':node.symbol_kind==='module'?'MODULE':'FUNCTION'):node.kind==='handler'?'EXCEPTION HANDLER':node.kind==='task'?'BACKGROUND TASK':(node.boundary||'EXTERNAL').toUpperCase());
  svg('text',{x:16,y:23,fill:'#607086','font-family':'Segoe UI, Arial, sans-serif','font-size':9,'font-weight':700,'letter-spacing':1.1},type,g);
  svg('text',{x:16,y:47,fill:'#20334c','font-family':'Segoe UI, Arial, sans-serif','font-size':15,'font-weight':650},shorten(node.title,29),g);
  svg('text',{x:16,y:66,fill:'#68788d','font-family':'Consolas, monospace','font-size':10},shorten(place(node.location),39),g);
@@ -131,10 +145,13 @@ function selectNode(id){
  const present=section('Currently recognized',node.existing.length);
  if(!node.existing.length)element('p','No log, trace scope, or configured reporter is recognized at this node. A reporting owner elsewhere may provide instrumentation.','empty',present);
  for(const signal of node.existing){const item=element('div',null,'signal',present);element('p',signal.text,null,item);element('small',`${place(signal.location)}${signal.conditional?' · conditional path':''}${signal.basis?' · '+signal.basis:''}`,null,item)}
+ if(node.coverage){const show=element('button','Show reporting path','download',panel);show.id='show-reporting-path';show.type='button';show.addEventListener('click',()=>{activeCoverage=node.id;focus=node.symbol;selected=node.id;renderGraph()});const coverage=section('Coverage decision',node.coverage.evidence.length);coverage.classList.add('coverage-decision');element('p',node.coverage.status==='recognized'?'Recognized within the static model':'Coverage not established','fact',coverage);element('p','This reviews known routes and recognized signals. Runtime delivery and unresolved callers are not verified.','empty',coverage);for(const evidence of node.coverage.evidence){const item=element('div',null,'signal coverage-evidence'+(evidence.credited?' credited':''),coverage);element('p',evidence.message,null,item);if(evidence.owner)element('p','Owner: '+evidence.owner,'fact',item);const link=element('button',place(evidence.location),'result',item);link.type='button';link.disabled=!byId.has(evidence.symbol);link.setAttribute('aria-label','Show source owner at '+place(evidence.location));link.addEventListener('click',()=>{activeCoverage=null;focus=evidence.symbol;selected=evidence.symbol;renderGraph();[...$('graph').querySelectorAll('.graph-node')].find(n=>n.getAttribute('data-node')===evidence.symbol)?.focus()});element('small',evidence.reason.replaceAll('_',' '),null,item)}if(node.coverage.truncated)element('p','Explanation truncated at 64 items. The verdict uses the full bounded review.','empty',coverage)}
  const recommended=section('Recommended for review',node.findings.length);
  if(!node.findings.length)element('p','No recommendation is attached to this node. This does not establish complete coverage.','empty',recommended);
  for(const id of node.findings){const finding=data.findings[id],card=element('article',null,'finding',recommended),head=element('div',null,'finding-title',card);
  element('strong',`${finding.rule_id} · ${finding.title}`,null,head);element('small',`${finding.priority} review priority · ${finding.confidence} confidence`,null,head);
+ if(data.baseline?.renewal_required?.includes(finding.fingerprint))element('p','Changed evidence/advice: prior dismissal requires renewed review.','fact',head);
+ if(finding.review_owner)element('p','Review owner: '+finding.review_owner+(finding.review_expires?' · expires '+finding.review_expires+' at 00:00 UTC':'')+(finding.review_expired?' · EXPIRED — active again':''),'fact',head);
  element('p',`${finding.baseline_status||'Not compared'} · ${finding.review_status||'active'}`,'fact',head);
  if(finding.review_reason)element('p','Review reason: '+finding.review_reason,'fact',head);
  for(const r of finding.recommendations){const item=element('div',null,'recommendation',card);element('span',r.level||r.kind.replaceAll('_',' ').toUpperCase(),'pill',item);element('p',r.action,null,item);element('p','When: '+r.condition,'when',item);if(r.context_fields.length)element('p','Useful fields: '+r.context_fields.join(', '),'location',item)}
@@ -145,21 +162,35 @@ function selectNode(id){
  if(finding.paths.length){element('p','Possible caller paths:','fact',proof);for(const path of finding.paths)element('p',path.join(' → '),'location',proof)}
  }
  if(node.outcomes){const outcomes=section('Handler outcomes',node.outcomes.length);element('p',node.outcomes.join(' · ')+'. These are syntactic outcomes, not confirmed business outcomes.','empty',outcomes)}
- if(node.unresolved_count){const unknown=section('Unresolved calls',node.unresolved_count),box=element('div',null,'unresolved',unknown);element('p','Targets remain unknown; the diagram does not invent these edges.','empty',box);const list=element('ul',null,null,box);for(const call of node.unresolved_examples)element('li',`${call.expression} · L${call.location.line}`,null,list);if(node.unresolved_count>node.unresolved_examples.length)element('p',`Showing ${node.unresolved_examples.length} examples.`,'empty',box)}
+ if(node.unresolved_count){const unknown=section('Unresolved calls',node.unresolved_count),box=element('div',null,'unresolved',unknown);element('p','Targets remain unknown; the diagram does not invent these edges.','empty',box);const list=element('ul',null,null,box);for(const call of node.unresolved_examples){const item=element('li',`${call.expression} · L${call.location.line}`,null,list);if(call.gap){element('p',call.gap.reason.replaceAll('_',' ')+': '+call.gap.explanation,'fact',item);element('p','Next: '+call.gap.action,'fact',item)}}if(node.unresolved_count>node.unresolved_examples.length)element('p',`Showing ${node.unresolved_examples.length} examples.`,'empty',box)}
 }
 function applyZoom(value){zoom=Math.max(.05,Math.min(2.5,value));$('graph').style.width=`${dimensions.width*zoom}px`;$('graph').style.height=`${dimensions.height*zoom}px`}
 function fitView(){const viewport=$('viewport');applyZoom(Math.min(1,(viewport.clientWidth-20)/dimensions.width,(viewport.clientHeight-20)/dimensions.height));viewport.scrollLeft=0;viewport.scrollTop=0}
 function resetView(){fitView();if(zoom<.65)applyZoom(.65)}
 $('fit').addEventListener('click',fitView);$('zoom-in').addEventListener('click',()=>applyZoom(zoom*1.2));$('zoom-out').addEventListener('click',()=>applyZoom(zoom/1.2));
+$('clear-path').addEventListener('click',()=>{activeCoverage=null;renderGraph()});
+$('runtime-overlay').addEventListener('change',()=>{activeCoverage=null;renderGraph()});
+if(data.runtime){$('runtime-legend').hidden=false;$('runtime-control').hidden=false;$('runtime-review').hidden=false;element('strong','Imported runtime comparison',null,$('runtime-review'));element('p',Object.entries(data.runtime.summary).map(([k,v])=>k.replaceAll('_',' ')+': '+v).join(' · ')+ ' · Static pairs not observed: '+data.runtime.static_not_observed.length,null,$('runtime-review'));element('p',data.runtime.note,null,$('runtime-review'));const details=element('details',null,null,$('runtime-review'));element('summary','Observed pairs (first 100; JSON contains all)',null,details);for(const p of data.runtime.pairs.slice(0,100))element('p',p.caller+' → '+p.callee+' · '+p.status.replaceAll('_',' ')+' · '+p.count,'location',details)}
 $('callers').addEventListener('change',renderGraph);$('limit').addEventListener('change',renderGraph);
-$('search').addEventListener('input',()=>{const query=$('search').value.trim().toLowerCase(),results=$('results');results.replaceChildren();if(!query)return;const found=symbols.filter(n=>(n.qualified_name+' '+n.id).toLowerCase().includes(query)).slice(0,12);for(const node of found){const button=element('button',node.qualified_name,'result',results);button.type='button';element('small',place(node.location),null,button);button.addEventListener('click',()=>{focus=node.id;selected=null;$('search').value='';results.replaceChildren();renderGraph();$('graph-title').scrollIntoView({block:'nearest'})})}if(!found.length)element('p','No matching symbols.','result',results)});
+$('search').addEventListener('input',()=>{const query=$('search').value.trim().toLowerCase(),results=$('results');results.replaceChildren();if(!query)return;const found=symbols.filter(n=>(n.qualified_name+' '+n.id).toLowerCase().includes(query)).slice(0,12);for(const node of found){const button=element('button',node.qualified_name,'result',results);button.type='button';element('small',place(node.location),null,button);button.addEventListener('click',()=>{activeCoverage=null;focus=node.id;selected=null;$('search').value='';results.replaceChildren();renderGraph();$('graph-title').scrollIntoView({block:'nearest'})})}if(!found.length)element('p','No matching symbols.','result',results)});
 $('search').addEventListener('keydown',event=>{if(event.key==='Escape')$('results').replaceChildren();if(event.key==='ArrowDown'){event.preventDefault();$('results').querySelector('button')?.focus()}if(event.key==='Enter'&&$('results').querySelectorAll('button').length===1){event.preventDefault();$('results').querySelector('button').click()}});
 document.addEventListener('click',event=>{if(!event.target.closest('.search'))$('results').replaceChildren()});
 for(const value of [...new Set([20,40,60,100,150,200,data.max_nodes])].sort((a,b)=>a-b)){const option=element('option',String(value),null,$('limit'));option.value=String(value)}$('limit').value=String(data.max_nodes);
 $('download').addEventListener('click',()=>{const copy=$('graph').cloneNode(true);copy.removeAttribute('style');copy.setAttribute('xmlns',NS);const xml=new XMLSerializer().serializeToString(copy),url=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml'})),link=document.createElement('a');link.href=url;link.download='flowsignal-execution-path.svg';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 $('files').textContent=data.summary.files_scanned.toLocaleString();$('symbols').textContent=data.summary.symbols.toLocaleString();$('signals').textContent=data.nodes.reduce((count,node)=>count+node.existing.filter(s=>s.kind!=='trace').length,0).toLocaleString();$('findings').textContent=data.summary.findings.toLocaleString();
 if(data.baseline){$('baseline-review').hidden=false;const c=data.baseline.counts;$('baseline-summary').textContent=`Compared with baseline: ${c.new} new · ${c.unchanged} unchanged · ${c.resolved} resolved · ${c.unverified} unverified · ${c.dismissed} dismissed. Dismissed findings remain visible.`;for(const state of ['resolved','unverified']){for(const finding of data.baseline[state].slice(0,100))element('p',`${state}: ${finding.rule_id} · ${finding.symbol} · ${place(finding.location)}`,'location',$('baseline-changes'));if(data.baseline[state].length>100)element('p',`Showing 100 of ${data.baseline[state].length} ${state} findings; the JSON report contains the full list.`,'fact',$('baseline-changes'))}}
+const gaps=data.resolution_gaps||[];
+if(gaps.length){
+ $('gap-review').hidden=false;$('gap-summary').textContent=`Unresolved call review · ${gaps.length} calls · ${Object.keys(data.summary.unresolved_reasons||{}).length} reasons`;
+ function option(select,value,label){const item=element('option',label,null,select);item.value=value}
+ option($('gap-reason'),'','All reasons');for(const [reason,count] of Object.entries(data.summary.unresolved_reasons||{}))option($('gap-reason'),reason,`${reason.replaceAll('_',' ')} (${count})`);
+ option($('gap-entrypoint'),'','All entrypoint contexts');option($('gap-entrypoint'),'__none__','No entrypoint found in known routes');
+ for(const id of [...new Set(gaps.flatMap(g=>g.entrypoints))].sort())option($('gap-entrypoint'),id,byId.get(id)?.qualified_name||id);
+ function renderGaps(){const reason=$('gap-reason').value,entry=$('gap-entrypoint').value,shown=gaps.filter(g=>(!reason||g.reason===reason)&&(!entry||(entry==='__none__'?!g.entrypoints.length:g.entrypoints.includes(entry))));$('gap-count').textContent=`${shown.length} matching calls${shown.length>100?' · showing the first 100; JSON contains all records':''}`;$('gap-list').replaceChildren();for(const gap of shown.slice(0,100)){const card=element('article',null,'gap-card',$('gap-list'));element('strong',gap.reason.replaceAll('_',' '),null,card);element('p',gap.expression,'location',card);element('p',gap.explanation,null,card);element('p','Next: '+gap.action,null,card);element('p','Potential entrypoints: '+(gap.entrypoints.map(id=>byId.get(id)?.qualified_name||id).join(', ')||'none found through known edges')+(gap.context_truncated?' · partial context':''),'fact',card);const button=element('button',place(gap.location),'result',card);button.type='button';button.disabled=!byId.has(gap.symbol);button.setAttribute('aria-label','Show unresolved call owner at '+place(gap.location));button.addEventListener('click',()=>{activeCoverage=null;focus=gap.symbol;selected=gap.symbol;renderGraph();$('graph-title').scrollIntoView({block:'nearest'});[...$('graph').querySelectorAll('.graph-node')].find(n=>n.getAttribute('data-node')===gap.symbol)?.focus()})}}
+ $('gap-reason').addEventListener('change',renderGaps);$('gap-entrypoint').addEventListener('change',renderGaps);renderGaps();
+}
 const incomplete=data.summary.status==='incomplete';
+if(data.review_history?.length){const ledger=element('details',null,'footer',document.querySelector('.shell'));element('summary','Review history ('+data.review_history.length+' events; latest 100 shown)',null,ledger);for(const e of data.review_history.slice(-100))element('p',e.at+' · '+e.action+' · '+(e.owner||'unspecified')+' · '+e.fingerprint+' · '+(e.reason||'')+(e.expires?' · expires '+e.expires:''),'location',ledger)}
 $('scan-status').textContent=incomplete?'Incomplete scan — files, resolution, or analysis work were omitted. Review the diagnostics before interpreting missing findings.':'Scan completed within its configured scope and budgets. Static analysis still leaves unresolved behavior; completion does not establish complete coverage.';
 $('scan-status').classList.toggle('incomplete',incomplete);
 $('report-path').textContent='Scanned repository: '+data.root;

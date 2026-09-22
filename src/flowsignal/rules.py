@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from .model import (
     Call,
+    CoverageDecision,
+    CoverageEvidence,
     Diagnostic,
     Finding,
     Handler,
@@ -46,6 +49,24 @@ def reports_outcome(handler: Handler) -> bool:
     ) or any(not signal.conditional for signal in handler.reporting_signals)
 
 
+@dataclass
+class CoverageResult:
+    recognized: bool = False
+    evidence: list[CoverageEvidence] = field(default_factory=list)
+    truncated: bool = False
+
+    def add(self, evidence):
+        if len(self.evidence) < 64:
+            self.evidence.append(evidence)
+        else:
+            self.truncated = True
+
+    def extend(self, other):
+        for evidence in other.evidence:
+            self.add(evidence)
+        self.truncated |= other.truncated
+
+
 def evaluate(analysis: Analysis) -> list[Finding]:
     symbols = {
         definition.symbol.id: definition.symbol for definition in analysis.definitions
@@ -56,7 +77,7 @@ def evaluate(analysis: Analysis) -> list[Finding]:
             callers[call.target].append(call)
     findings: list[Finding] = []
     path_cache: dict[str, list[list[str]]] = {}
-    coverage_cache: dict[str, bool] = {}
+    coverage_cache: dict[str, CoverageResult] = {}
 
     def paths_to(symbol_id: str) -> list[list[str]]:
         if symbol_id in path_cache:
@@ -110,52 +131,206 @@ def evaluate(analysis: Analysis) -> list[Finding]:
                     return result
         return result
 
-    def covered(call: Call) -> bool:
-        handlers = effective_handlers(call)
-        broad = next((handler for handler in handlers if handler.catches_all), None)
-        # Typed handlers before the catch-all must also expose their failures.
-        return broad is not None and all(
-            reports_outcome(handler) for handler in handlers
-        )
-
     def unreported_consumption(call: Call) -> bool:
         return any(
             set(handler.outcomes) != {"raise"} and not reports_outcome(handler)
             for handler in effective_handlers(call)
         )
 
-    def coverage_in_callers(symbol_id: str, seen: frozenset[str] = frozenset()) -> bool:
+    def explain_local(call: Call) -> tuple[CoverageResult, bool]:
+        result = CoverageResult()
+
+        def note(reason, message, credited=False):
+            result.add(
+                CoverageEvidence(
+                    call.location,
+                    call.symbol,
+                    reason,
+                    message,
+                    credited,
+                    call_id=call.id,
+                )
+            )
+
+        if call.execution.startswith("deferred_"):
+            note(
+                "deferred_execution",
+                "Creating deferred work does not execute its body under this handler or span.",
+            )
+            return result, True
+        handlers = effective_handlers(call)
+        broad = any(handler.catches_all for handler in handlers)
+        for identity in call.blocked_handler_ids:
+            handler = analysis.handlers[identity]
+            result.add(
+                CoverageEvidence(
+                    handler.location,
+                    handler.symbol,
+                    "handler_blocked",
+                    "An inner context manager may suppress the exception before this handler runs.",
+                )
+            )
+        for handler in handlers:
+            result.add(
+                CoverageEvidence(
+                    handler.location,
+                    handler.symbol,
+                    "catch_all" if handler.catches_all else "typed_handler",
+                    "Catch-all candidate within the static exception model."
+                    if handler.catches_all
+                    else "Typed handler covers only some possible exceptions.",
+                )
+            )
+            for log in handler.logs:
+                credited = (
+                    log.level in {"WARNING", "ERROR", "CRITICAL"}
+                    and not log.conditional
+                )
+                result.add(
+                    CoverageEvidence(
+                        log.location,
+                        log.symbol,
+                        "failure_log"
+                        if credited
+                        else "conditional_log"
+                        if log.conditional
+                        else "log_below_warning",
+                        f"{log.level} log is an unconditional outcome signal."
+                        if credited
+                        else f"{log.level} log is conditional or below WARNING; it cannot establish handler reporting.",
+                        credited,
+                    )
+                )
+            for signal in handler.reporting_signals:
+                result.add(
+                    CoverageEvidence(
+                        signal.location,
+                        signal.symbol,
+                        "configured_reporter"
+                        if not signal.conditional
+                        else "conditional_reporter",
+                        "Configured outcome contract is credited; delivery is not verified."
+                        if not signal.conditional
+                        else "Conditional reporter cannot establish reporting on every handler outcome.",
+                        not signal.conditional,
+                        signal.owner,
+                    )
+                )
+            if not reports_outcome(handler):
+                result.add(
+                    CoverageEvidence(
+                        handler.location,
+                        handler.symbol,
+                        "handler_unreported",
+                        "No unconditional WARNING-or-higher log or configured outcome reporter is recognized.",
+                    )
+                )
+        consumed = unreported_consumption(call)
+        for item in call.trace_evidence:
+            if item.credited and consumed:
+                result.add(
+                    CoverageEvidence(
+                        item.location,
+                        item.symbol,
+                        "trace_consumed",
+                        "An unreported handler may consume the exception before this span records it.",
+                    )
+                )
+            else:
+                result.add(item)
+        if broad and all(reports_outcome(handler) for handler in handlers):
+            result.recognized = True
+            note(
+                "handler_coverage",
+                "All effective handlers report outcomes and a catch-all is present.",
+                True,
+            )
+        elif call.trace_failure_coverage and not consumed:
+            result.recognized = True
+            note(
+                "trace_coverage",
+                "A recognized failure-recording span covers this call within the static model.",
+                True,
+            )
+        elif consumed:
+            note(
+                "silent_consumption",
+                "A handler may consume the failure without reporting it; more distant callers cannot be credited.",
+            )
+        elif call.propagation_uncertain:
+            note(
+                "propagation_unknown",
+                "Exception propagation through an enclosing context manager is uncertain.",
+            )
+        else:
+            note(
+                "caller_review",
+                "Local coverage is not established; inspect resolved caller routes.",
+            )
+        return result, bool(call.propagation_uncertain or consumed)
+
+    def coverage_in_callers(
+        symbol_id: str, seen: frozenset[str] = frozenset()
+    ) -> CoverageResult:
         if symbol_id in coverage_cache:
             return coverage_cache[symbol_id]
-        if symbol_id in seen or len(seen) >= analysis.config.max_path_depth:
-            return False
+        symbol = symbols[symbol_id]
+        result = CoverageResult()
+
+        def stop(reason, message):
+            result.add(CoverageEvidence(symbol.location, symbol_id, reason, message))
+            return result
+
+        if symbol_id in seen:
+            return stop(
+                "caller_cycle",
+                "A caller cycle prevents establishing a reporting owner on every route.",
+            )
+        if len(seen) >= analysis.config.max_path_depth:
+            return stop(
+                "caller_depth_limit",
+                "Caller review reached the configured depth limit.",
+            )
         if not analysis.graph_step():
-            return False
+            return stop(
+                "graph_work_limit", "Caller review exhausted the graph work budget."
+            )
         incoming = callers[symbol_id]
-        if not incoming or symbols[symbol_id].entrypoint:
-            coverage_cache[symbol_id] = False
-            return False
+        if not incoming or symbol.entrypoint:
+            return stop(
+                "entrypoint" if symbol.entrypoint else "no_known_callers",
+                "An entrypoint ends caller coverage review."
+                if symbol.entrypoint
+                else "No resolved caller establishes a reporting owner; external callers remain unknown.",
+            )
         for call in incoming:
             if not analysis.graph_step():
-                return False
-            if call.execution.startswith("deferred_"):
-                coverage_cache[symbol_id] = False
-                return False
-            if (
-                covered(call)
-                or call.trace_failure_coverage
-                and not unreported_consumption(call)
-            ):
+                return stop(
+                    "graph_work_limit", "Caller review exhausted the graph work budget."
+                )
+            local, blocked = explain_local(call)
+            result.extend(local)
+            if local.recognized:
                 continue
-            # A suppressing handler blocks propagation to more distant owners.
-            if call.propagation_uncertain or unreported_consumption(call):
-                coverage_cache[symbol_id] = False
-                return False
-            if not coverage_in_callers(call.symbol, seen | {symbol_id}):
-                coverage_cache[symbol_id] = False
-                return False
-        coverage_cache[symbol_id] = True
-        return True
+            if blocked:
+                return result
+            parent = coverage_in_callers(call.symbol, seen | {symbol_id})
+            result.extend(parent)
+            if not parent.recognized:
+                return result
+        result.recognized = True
+        result.add(
+            CoverageEvidence(
+                symbol.location,
+                symbol_id,
+                "all_known_callers",
+                "All resolved caller routes inspected within the bounds establish static coverage; unresolved and external callers remain unknown.",
+                True,
+            )
+        )
+        # Negative results depend on the current route's cycle/depth bounds.
+        coverage_cache[symbol_id] = result
+        return result
 
     def emit(
         rule: str,
@@ -342,15 +517,23 @@ def evaluate(analysis: Analysis) -> list[Finding]:
         )
 
     for call in analysis.calls:
-        if (
-            call.boundary
-            and not covered(call)
-            and not (call.trace_failure_coverage and not unreported_consumption(call))
-        ):
-            # Do not credit callers if this operation's own handler can consume the failure.
-            blocked = call.propagation_uncertain or unreported_consumption(call)
-            if not blocked and coverage_in_callers(call.symbol):
-                continue
+        decision = None
+        if call.boundary:
+            result, blocked = explain_local(call)
+            if not result.recognized and not blocked:
+                parent = coverage_in_callers(call.symbol)
+                result.extend(parent)
+                result.recognized = parent.recognized
+            decision = CoverageDecision(
+                call.id,
+                call.symbol,
+                call.location,
+                "recognized" if result.recognized else "not_established",
+                result.evidence,
+                result.truncated,
+            )
+            analysis.coverage.append(decision)
+        if decision and decision.status == "not_established":
             emit(
                 "FS005",
                 call.symbol,

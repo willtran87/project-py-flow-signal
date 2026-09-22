@@ -17,6 +17,8 @@ from pathlib import Path
 from .config import DEFAULT_EXCLUDES, Config, matches
 from .model import (
     Call,
+    CoverageDecision,
+    CoverageEvidence,
     Diagnostic,
     Evidence,
     Handler,
@@ -24,6 +26,7 @@ from .model import (
     Log,
     Report,
     ReportingSignal,
+    ResolutionGap,
     Symbol,
     stable_id,
 )
@@ -186,6 +189,8 @@ class Analysis:
     calls: list[Call] = field(default_factory=list)
     logs: list[Log] = field(default_factory=list)
     reporting_signals: list[ReportingSignal] = field(default_factory=list)
+    coverage: list[CoverageDecision] = field(default_factory=list)
+    resolution_gaps: list[ResolutionGap] = field(default_factory=list)
     handlers: dict[str, Handler] = field(default_factory=dict)
     finalizers: list[tuple[str, Location, list[str]]] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
@@ -206,6 +211,8 @@ class Analysis:
             "source_bytes": 0,
             "ast_nodes": 0,
             "graph_steps": 0,
+            "type_steps": 0,
+            "resolution_context_steps": 0,
             "discovery_entries": 0,
         }
     )
@@ -626,6 +633,7 @@ class FactVisitor(ast.NodeVisitor):
         self.handler_depth = 0
         self.traced = 0
         self.trace_failure_scopes = 0
+        self.trace_evidence = []
         self.propagation_uncertain = False
         self.blocked_handler_ids: set[str] = set()
         self.parents: list[ast.AST] = []
@@ -649,6 +657,17 @@ class FactVisitor(ast.NodeVisitor):
 
     def resolve(self, node: ast.AST) -> tuple[str, str | None, str]:
         raw = dotted(node)
+        if isinstance(node, ast.Attribute) and not any(
+            isinstance(part, ast.Name) and part.id in self.property_shadows
+            for part in ast.walk(node.value)
+        ):
+            method = self.analysis.receiver_index.method(node, self.receiver_scope)
+            if method:
+                return (
+                    method.symbol.qualified_name,
+                    method.symbol.id,
+                    "inferred_receiver",
+                )
         if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Call):
             constructor, _, _ = self.resolve(node.value.func)
             if constructor == "pathlib.Path" or constructor in self.analysis.classes:
@@ -712,6 +731,10 @@ class FactVisitor(ast.NodeVisitor):
                     return candidate, initializers[0].id, "inferred_constructor"
         if name in BUILTIN_NAMES and name not in self.bindings:
             return "builtins." + name, None, "builtin"
+        if name.rpartition(".")[0] in self.analysis.classes or (
+            "." in raw and self.bindings.get(raw.split(".")[0]) in self.analysis.classes
+        ):
+            return name, None, "unresolved"
         if raw.split(".")[0] in self.bindings and self.bindings[raw.split(".")[0]]:
             return name, None, "import_or_annotation"
         if name.startswith("pathlib.Path."):
@@ -898,7 +921,9 @@ class FactVisitor(ast.NodeVisitor):
             self.trace_failure_scopes,
             self.propagation_uncertain,
             self.blocked_handler_ids,
+            self.trace_evidence,
         )
+        self.trace_evidence = list(self.trace_evidence)
         try:
             # Multiple with-items nest left to right, including evaluation of
             # later context expressions inside previously entered contexts.
@@ -931,6 +956,29 @@ class FactVisitor(ast.NodeVisitor):
                     }
                     # Outer spans may never receive a suppressed exception.
                     self.trace_failure_scopes = 0
+                    self.trace_evidence = [
+                        CoverageEvidence(
+                            e.location,
+                            e.symbol,
+                            "outer_trace_blocked",
+                            "An inner context manager may suppress the exception before this span sees it.",
+                        )
+                        if e.credited
+                        else e
+                        for e in self.trace_evidence
+                    ]
+                    self.trace_evidence.append(
+                        CoverageEvidence(
+                            Location(
+                                self.unit.path,
+                                item.context_expr.lineno,
+                                item.context_expr.col_offset,
+                            ),
+                            self.symbol.id,
+                            "unknown_context",
+                            "Exception suppression by this context manager is unknown.",
+                        )
+                    )
                     self.analysis.diagnostics.append(
                         Diagnostic(
                             "context_manager_propagation",
@@ -940,6 +988,7 @@ class FactVisitor(ast.NodeVisitor):
                         )
                     )
                 self.traced += int(traced)
+                enabled = False
                 if traced and name.endswith(".start_as_current_span"):
                     options = {
                         keyword.arg: keyword.value
@@ -952,6 +1001,23 @@ class FactVisitor(ast.NodeVisitor):
                         for key in ("record_exception", "set_status_on_exception")
                     )
                     self.trace_failure_scopes += int(enabled and None not in options)
+                    enabled = enabled and None not in options
+                if traced:
+                    self.trace_evidence.append(
+                        CoverageEvidence(
+                            Location(
+                                self.unit.path,
+                                item.context_expr.lineno,
+                                item.context_expr.col_offset,
+                            ),
+                            self.symbol.id,
+                            "trace_enabled" if enabled else "trace_not_credited",
+                            "Span options support exception recording and error status."
+                            if enabled
+                            else "This span is not a current exception-recording scope, or its failure options are disabled or unknown.",
+                            enabled,
+                        )
+                    )
             self.block(node.body)
         finally:
             (
@@ -959,6 +1025,7 @@ class FactVisitor(ast.NodeVisitor):
                 self.trace_failure_scopes,
                 self.propagation_uncertain,
                 self.blocked_handler_ids,
+                self.trace_evidence,
             ) = previous
 
     visit_AsyncWith = visit_With
@@ -1104,7 +1171,12 @@ class FactVisitor(ast.NodeVisitor):
         ) and not call.execution.startswith("deferred_")
         call.propagation_uncertain = self.propagation_uncertain
         call.blocked_handler_ids = sorted(self.blocked_handler_ids)
+        call.trace_evidence = list(self.trace_evidence)
         self.analysis.calls.append(call)
+        if resolution in {"unresolved", "ambiguous"}:
+            from .uncertainty import explain
+
+            self.analysis.resolution_gaps.append(explain(self, node.func, call))
         if self.handler:
             self.analysis.handlers[self.handler].calls.append(call.id)
         if getter:
@@ -1613,6 +1685,9 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
                     definition.symbol.location.line,
                 )
             )
+    from .uncertainty import attach_entrypoints
+
+    attach_entrypoints(analysis)
     from .rules import evaluate
 
     findings = evaluate(analysis)
@@ -1636,4 +1711,6 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
         inventory=analysis.inventory,
         analysis_stats=analysis.stats,
         reporting_signals=analysis.reporting_signals,
+        coverage=analysis.coverage,
+        resolution_gaps=analysis.resolution_gaps,
     )

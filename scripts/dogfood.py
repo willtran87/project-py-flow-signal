@@ -179,6 +179,32 @@ def run(repository: Path, output: Path) -> dict:
             "flowsignal/model.py:Handler.catches_all",
         ),
     }
+    core_edges.add(
+        ("flowsignal/rules.py:evaluate", "flowsignal/rules.py:CoverageResult.extend")
+    )
+    receiver_edges = {
+        ("MemberWrites.__init__", "ReturnValues.__init__"),
+        ("ReceiverIndex.member", "ReturnValues.visit"),
+        ("ReturnValues.visit", "ReceiverIndex.step"),
+        ("ReceiverIndex.getter", "ReceiverScope.type_of"),
+        ("ReceiverIndex.scope", "ReceiverScope.current"),
+        ("ReceiverScope.type_of", "ReceiverIndex.member"),
+        ("ReceiverScope.type_of", "ReceiverIndex.ordinary_class"),
+        ("ReceiverScope.type_of", "ReceiverIndex.qualified"),
+        ("ReceiverScope.visit_AnnAssign", "ReceiverIndex.annotation"),
+    }
+    core_edges.update(
+        ("flowsignal/receivers.py:" + a, "flowsignal/receivers.py:" + b)
+        for a, b in receiver_edges
+    )
+    core_edges.update(
+        ("flowsignal/scanner.py:" + a, "flowsignal/receivers.py:" + b)
+        for a, b in [
+            ("FactVisitor.__init__", "ReceiverIndex.scope"),
+            ("FactVisitor.record_call", "ReceiverIndex.getter"),
+            ("FactVisitor.visit_Attribute", "ReceiverIndex.getter"),
+        ]
+    )
     require(
         core_edges <= set(observed), "A required CLI execution edge was not observed"
     )
@@ -187,7 +213,7 @@ def run(repository: Path, output: Path) -> dict:
         "A required observed CLI edge is missing from static analysis",
     )
     checks.append(
-        "thirteen central static call relationships corroborated by execution"
+        f"{len(core_edges)} central static call relationships corroborated by execution"
     )
     html = (output / "self.html").read_text(encoding="utf-8")
     embedded = html.split('<script id="flow-data" type="application/json">', 1)[

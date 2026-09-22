@@ -16,6 +16,8 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
     nodes: dict[str, dict] = {}
     edges: list[dict] = []
     anchors: dict[tuple[str, int, int], str] = {}
+    coverage = {item.call_id: asdict(item) for item in report.coverage}
+    gaps = {item.call_id: asdict(item) for item in report.resolution_gaps}
 
     def node(identity, title, kind, symbol, location, **extra):
         record = {
@@ -94,6 +96,7 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
                 boundary=call.boundary,
                 execution=call.execution,
                 expression=call.expression,
+                coverage=coverage.get(call.id),
             )
             anchor(call.symbol, call.location, identity)
     for log in report.logs:
@@ -181,6 +184,7 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
                         "expression": call.expression,
                         "location": asdict(call.location),
                         "resolution": call.resolution,
+                        "gap": gaps.get(call.id),
                     }
                 )
         # Lexical handlers are candidates, never asserted exception propagation.
@@ -200,6 +204,73 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
                 # Only the nearest lexical try is drawn; do not jump over recovery.
                 if group:
                     break
+    # Project only the routes actually retained in the bounded explanation.
+    # Other edges between these symbols are not reporting evidence.
+    edges_by_call = defaultdict(list)
+    for item in edges:
+        edges_by_call[item["id"].split(":implementation")[0]].append(item)
+        if item["kind"] == "exception":
+            edges_by_call[item["id"].split(":")[1]].append(item)
+    for decision in report.coverage:
+        boundary_id = "call:" + decision.call_id
+        if boundary_id not in nodes:
+            continue
+        selected_nodes = {boundary_id, decision.symbol}
+        selected_edges = {}
+        owners, barriers = set(), set()
+        call_ids = {decision.call_id}
+        for item in decision.evidence:
+            selected_nodes.add(item.symbol)
+            anchor_id = anchors.get(
+                (item.symbol, item.location.line, item.location.column)
+            )
+            if anchor_id:
+                selected_nodes.add(anchor_id)
+            if item.call_id:
+                call_ids.add(item.call_id)
+            if (
+                item.reason in {"failure_log", "configured_reporter", "trace_coverage"}
+                and item.credited
+            ):
+                owners.add(anchor_id or item.symbol)
+            if item.reason in {
+                "silent_consumption",
+                "handler_unreported",
+                "handler_blocked",
+                "propagation_unknown",
+                "deferred_execution",
+            }:
+                barriers.add(anchor_id or item.symbol)
+        for identity in call_ids:
+            for item in edges_by_call[identity]:
+                selected_edges[item["id"]] = item
+                selected_nodes.update((item["source"], item["target"]))
+        nodes[boundary_id]["coverage_path"] = {
+            "nodes": [
+                boundary_id,
+                *sorted((selected_nodes & nodes.keys()) - {boundary_id}),
+            ],
+            "edges": sorted(selected_edges),
+            "owners": sorted(owners),
+            "barriers": sorted(barriers),
+            "truncated": decision.truncated,
+            "note": "Inspected reporting routes; may stop at the first uncovered route. This is not an exhaustive execution graph.",
+        }
+    if report.runtime:
+        symbol_locations = {s.id: s.location for s in report.symbols}
+        for pair in report.runtime["pairs"]:
+            if pair["status"] not in {"observed_only", "observed_and_inferred"}:
+                continue
+            edge(
+                "runtime:" + stable_id(pair["caller"], pair["callee"]),
+                pair["caller"],
+                pair["callee"],
+                "runtime",
+                f"{pair['status'].replace('_', ' ')} ({pair['count']} observations)",
+                symbol_locations[pair["caller"]],
+                runtime_status=pair["status"],
+                count=pair["count"],
+            )
     findings = {}
     for finding in report.findings:
         findings[finding.id] = asdict(finding)
@@ -258,6 +329,9 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
         "diagnostics": [asdict(item) for item in report.diagnostics],
         "limitations": report.limitations,
         "baseline": report.baseline,
+        "resolution_gaps": list(gaps.values()),
+        "runtime": report.runtime,
+        "review_history": report.review_history,
     }
 
 
@@ -283,7 +357,10 @@ def select_view(
             owned[node["symbol"]].append(node["id"])
     for edge in data["edges"]:
         source, target = by_id[edge["source"]], by_id[edge["target"]]
-        if edge["kind"] in {"call", "deferred"} and target["kind"] == "symbol":
+        if (
+            edge["kind"] in {"call", "deferred", "runtime"}
+            and target["kind"] == "symbol"
+        ):
             owner = source["symbol"]
             outgoing[owner].append(target["id"])
             incoming[target["id"]].append(owner)
@@ -332,7 +409,7 @@ def render_mermaid(
         "flowchart LR",
         f"    %% Scan status: {data['summary']['status']}; completion does not establish complete coverage.",
         "    %% Possible static paths; signal presence does not prove coverage.",
-        "    %% Solid: calls. Dotted: deferred execution or candidate handlers.",
+        "    %% Solid: static calls. Dotted: deferred work, candidate handlers, or explicitly labeled imported observations.",
         f"    %% {len(view['nodes'])} shown; {view['omitted']} omitted by view limit; {view['outside']} outside this neighborhood.",
     ]
     if data["summary"]["status"] == "incomplete":
@@ -361,6 +438,16 @@ def render_mermaid(
                     )
                 )
             )
+        if node.get("coverage"):
+            decision = node["coverage"]
+            labels.append("Coverage: " + decision["status"].replace("_", " "))
+            for item in decision["evidence"]:
+                fact = f"{item['location']['file']}:{item['location']['line']} [{item['reason']}] {item['message']}"
+                if item["owner"]:
+                    fact += " Owner: " + item["owner"]
+                lines.append("    %% Coverage evidence: " + _mermaid_text(fact))
+            if decision["truncated"]:
+                lines.append("    %% Coverage explanation truncated at 64 items.")
         if node["findings"]:
             states = {
                 data["findings"][identity]["review_status"]
@@ -379,6 +466,19 @@ def render_mermaid(
             labels.append("REVIEW: " + ", ".join(suggestions))
         if node["unresolved_count"]:
             labels.append(f"{node['unresolved_count']} unresolved calls")
+            for item in node["unresolved_examples"]:
+                if item.get("gap"):
+                    gap = item["gap"]
+                    lines.append(
+                        "    %% Unresolved: "
+                        + _mermaid_text(
+                            f"{gap['location']['file']}:{gap['location']['line']} [{gap['reason']}] {gap['explanation']} Next: {gap['action']}"
+                        )
+                    )
+            if node["unresolved_count"] > len(node["unresolved_examples"]):
+                lines.append(
+                    "    %% Unresolved explanations truncated to 12 per symbol; see JSON for all records."
+                )
         identity = "n" + stable_id(node["id"])
         style = (
             "mixed"

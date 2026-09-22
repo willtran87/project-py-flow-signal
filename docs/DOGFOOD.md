@@ -1,5 +1,9 @@
 # FlowSignal scanning and checking itself
 
+Latest update: [accuracy and review](ACCURACY_AND_REVIEW.md) implements the six P1/P2 enhancements, including resolution of the four indexed dogfood omissions, SARIF, dismissal lifecycle, and runtime import. Implementation and validation statements below describe their earlier increment.
+
+The newer [typed-flow and coverage increment](TYPED_FLOW_AND_COVERAGE.md) adds receiver/helper-return inference, source-linked coverage explanations and updated validation. Measurements below remain historical evidence for their stated revision.
+
 **Historical research-increment results:** the measurements and source lines below describe the earlier nine-file scanner. The [review-workflow increment](REVIEW_WORKFLOW.md) adds two modules, closes both property omissions listed below, and extends the harness to thirteen required observed relationships. Its newly added code has additional unresolved relationships; use the current `validation.json` for the current source snapshot. This document's earlier counts must not be interpreted as the latest scan totals.
 
 The dogfood run validates the working CLI, report generation, selected call relationships, and failure handling. It also reveals concrete gaps in the graph and recommendations. It does **not** establish complete execution coverage or an independent accuracy benchmark.

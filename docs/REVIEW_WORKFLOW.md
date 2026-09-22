@@ -1,5 +1,9 @@
 # Reporting owners, property paths, and repeatable reviews
 
+Latest update: [accuracy and review](ACCURACY_AND_REVIEW.md) implements the six P1/P2 enhancements, including resolution of the four indexed dogfood omissions, SARIF, dismissal lifecycle, and runtime import. Implementation and validation statements below describe their earlier increment.
+
+The newer [typed-flow and coverage increment](TYPED_FLOW_AND_COVERAGE.md) adds receiver/helper-return inference, source-linked coverage explanations and updated validation. Measurements below remain historical evidence for their stated revision.
+
 This increment implements the three recommended product enhancements: explicit non-log reporting recognition, supported property execution, and structural scan baselines. It retains deterministic, framework-neutral analysis without importing or executing target code.
 
 ## Declare reporting contracts
