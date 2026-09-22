@@ -112,6 +112,19 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
                 }
             )
             anchor(log.symbol, log.location, identity)
+    for signal in report.reporting_signals:
+        identity = "handler:" + signal.handler if signal.handler else signal.symbol
+        if identity in nodes:
+            nodes[identity]["existing"].append(
+                {
+                    "kind": signal.kind,
+                    "level": None,
+                    "location": asdict(signal.location),
+                    "text": f"Configured {signal.kind} reporter owned by {signal.owner}",
+                    "conditional": signal.conditional,
+                    "basis": signal.basis,
+                }
+            )
     for call in report.calls:
         call_node = "call:" + call.id
         destination = call_node if call_node in nodes else call.target
@@ -122,7 +135,10 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
                 "awaited": "await",
                 "deferred_coroutine": "creates coroutine",
                 "deferred_generator": "creates generator",
+                "implicit_property": "property getter",
             }.get(call.execution, "call")
+            if call.resolution == "inferred_constructor":
+                label = "possible initializer"
             edge(
                 call.id,
                 call.symbol,
@@ -241,6 +257,7 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
         "summary": report.summary(),
         "diagnostics": [asdict(item) for item in report.diagnostics],
         "limitations": report.limitations,
+        "baseline": report.baseline,
     }
 
 
@@ -322,6 +339,11 @@ def render_mermaid(
         lines.append(
             '    scan_status["INCOMPLETE SCAN: review diagnostics before interpreting missing findings"]:::suggested'
         )
+    if report.baseline:
+        lines.append(
+            "    %% Baseline changes: "
+            + json.dumps(report.baseline["counts"], sort_keys=True)
+        )
     for node in view["nodes"]:
         labels = [
             node["title"],
@@ -331,10 +353,20 @@ def render_mermaid(
             labels.append(
                 "EXISTING: "
                 + ", ".join(
-                    sorted({signal["level"] or "TRACE" for signal in node["existing"]})
+                    sorted(
+                        {
+                            signal["level"] or signal["kind"].upper()
+                            for signal in node["existing"]
+                        }
+                    )
                 )
             )
         if node["findings"]:
+            states = {
+                data["findings"][identity]["review_status"]
+                for identity in node["findings"]
+            }
+            labels.append("Review state: " + ", ".join(sorted(states)))
             suggestions = sorted(
                 {
                     recommendation["level"] or recommendation["kind"].replace("_", " ")
@@ -381,6 +413,9 @@ def render_mermaid(
     for node in view["nodes"]:
         for identity in node["findings"]:
             finding = data["findings"][identity]
+            if finding["review_reason"]:
+                reason = f"{finding['rule_id']} {finding['review_status']}: {finding['review_reason']}"
+                lines.append("    %% " + reason.replace("\n", " ").replace("\r", " "))
             for recommendation in finding["recommendations"]:
                 description = f"{finding['rule_id']} at {node['location']['file']}:{node['location']['line']}: {recommendation['level'] or recommendation['kind']} WHEN {recommendation['condition']}"
                 lines.append(

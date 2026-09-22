@@ -158,6 +158,26 @@ def run(repository: Path, output: Path) -> dict:
         ("flowsignal/cli.py:main", "flowsignal/diagram.py:render_html"),
         ("flowsignal/diagram.py:render_html", "flowsignal/diagram.py:graph_data"),
         ("flowsignal/cli.py:main", "flowsignal/cli.py:write_report"),
+        (
+            "flowsignal/scanner.py:FactVisitor.visit_ClassDef",
+            "flowsignal/scanner.py:BindingCollector.__init__",
+        ),
+        (
+            "flowsignal/scanner.py:scan",
+            "flowsignal/scanner.py:BindingCollector.__init__",
+        ),
+        ("flowsignal/scanner.py:scan", "flowsignal/scanner.py:FactVisitor.__init__"),
+        (
+            "flowsignal/scanner.py:scoped_bindings",
+            "flowsignal/scanner.py:BindingCollector.__init__",
+        ),
+        ("flowsignal/scanner.py:scan", "flowsignal/config.py:Config.validate"),
+        ("flowsignal/scanner.py:scan", "flowsignal/config.py:Config.to_dict"),
+        ("flowsignal/rules.py:evaluate", "flowsignal/model.py:Handler.catches_all"),
+        (
+            "flowsignal/rules.py:evaluate.effective_handlers",
+            "flowsignal/model.py:Handler.catches_all",
+        ),
     }
     require(
         core_edges <= set(observed), "A required CLI execution edge was not observed"
@@ -166,7 +186,9 @@ def run(repository: Path, output: Path) -> dict:
         core_edges <= static_edges,
         "A required observed CLI edge is missing from static analysis",
     )
-    checks.append("five central static call relationships corroborated by execution")
+    checks.append(
+        "thirteen central static call relationships corroborated by execution"
+    )
     html = (output / "self.html").read_text(encoding="utf-8")
     embedded = html.split('<script id="flow-data" type="application/json">', 1)[
         1

@@ -33,6 +33,7 @@ class Config:
     logger_names: list[str] = field(default_factory=list)
     boundaries: list[dict[str, str]] = field(default_factory=list)
     loggers: list[dict[str, str]] = field(default_factory=list)
+    reporters: list[dict[str, str]] = field(default_factory=list)
     max_files: int = 10_000
     max_file_bytes: int = 2_000_000
     max_path_depth: int = 8
@@ -97,6 +98,31 @@ class Config:
                     )
                 if name == "loggers" and record["level"] not in LEVELS:
                     raise ValueError(f"Logger level must be one of {sorted(LEVELS)}")
+        if not isinstance(self.reporters, list):
+            raise ValueError("reporters must be an array of tables")
+        for record in self.reporters:
+            required = {"pattern", "kind", "owner"}
+            if (
+                not isinstance(record, dict)
+                or not required <= record.keys()
+                or record.keys() - required - {"scope", "match"}
+                or any(not isinstance(v, str) or not v.strip() for v in record.values())
+            ):
+                raise ValueError(
+                    "Each reporter requires pattern, kind, owner; optional scope and match"
+                )
+            if record["kind"] not in {"diagnostic", "stderr", "error_return"}:
+                raise ValueError(
+                    "Reporter kind must be diagnostic, stderr, or error_return"
+                )
+            if record.get("match", "resolved") not in {"resolved", "expression"}:
+                raise ValueError("Reporter match must be resolved or expression")
+            if record.get("match") == "expression" and (
+                not record.get("scope") or record["scope"] == "*"
+            ):
+                raise ValueError(
+                    "Expression reporters require a restricted symbol scope"
+                )
 
     def to_dict(self) -> dict:
         return asdict(self)

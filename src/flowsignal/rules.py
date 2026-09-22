@@ -39,6 +39,13 @@ def failure_logs(handler: Handler):
     ]
 
 
+def reports_outcome(handler: Handler) -> bool:
+    return any(
+        log.level in {"WARNING", "ERROR", "CRITICAL"} and not log.conditional
+        for log in handler.logs
+    ) or any(not signal.conditional for signal in handler.reporting_signals)
+
+
 def evaluate(analysis: Analysis) -> list[Finding]:
     symbols = {
         definition.symbol.id: definition.symbol for definition in analysis.definitions
@@ -108,20 +115,12 @@ def evaluate(analysis: Analysis) -> list[Finding]:
         broad = next((handler for handler in handlers if handler.catches_all), None)
         # Typed handlers before the catch-all must also expose their failures.
         return broad is not None and all(
-            any(
-                log.level in {"WARNING", "ERROR", "CRITICAL"} and not log.conditional
-                for log in handler.logs
-            )
-            for handler in handlers
+            reports_outcome(handler) for handler in handlers
         )
 
     def unreported_consumption(call: Call) -> bool:
         return any(
-            set(handler.outcomes) != {"raise"}
-            and not any(
-                log.level in {"WARNING", "ERROR", "CRITICAL"} and not log.conditional
-                for log in handler.logs
-            )
+            set(handler.outcomes) != {"raise"} and not reports_outcome(handler)
             for handler in effective_handlers(call)
         )
 
@@ -203,15 +202,12 @@ def evaluate(analysis: Analysis) -> list[Finding]:
     for handler in analysis.handlers.values():
         symbol = symbols[handler.symbol]
         exits = set(handler.outcomes) - {"raise"}
-        if exits and not any(
-            log.level in {"WARNING", "ERROR", "CRITICAL"} and not log.conditional
-            for log in handler.logs
-        ):
+        if exits and not reports_outcome(handler):
             emit(
                 "FS001",
                 handler.symbol,
                 handler.location,
-                f"Handler catches {', '.join(handler.types)}; syntactic outcomes: {', '.join(handler.outcomes)}. No unconditional WARNING-or-higher log is recognized in this handler.",
+                f"Handler catches {', '.join(handler.types)}; syntactic outcomes: {', '.join(handler.outcomes)}. No unconditional WARNING-or-higher log or configured outcome reporter is recognized in this handler.",
                 [
                     log_advice(
                         handler.location,
@@ -238,6 +234,7 @@ def evaluate(analysis: Analysis) -> list[Finding]:
             symbol.entrypoint
             and set(handler.outcomes) == {"raise"}
             and handler.logs
+            and not any(not signal.conditional for signal in handler.reporting_signals)
             and not any(log.level in {"ERROR", "CRITICAL"} for log in handler.logs)
         ):
             emit(
@@ -305,7 +302,7 @@ def evaluate(analysis: Analysis) -> list[Finding]:
                     "FS006",
                     handler.symbol,
                     log.location,
-                    "A recognized exception-handler log does not explicitly retain traceback context with logger.exception() or exc_info=True.",
+                    "A recognized exception-handler log does not explicitly retain traceback context with logger.exception(), exc_info=True, or sys.exc_info().",
                     [
                         Recommendation(
                             "enrich_existing_log",
@@ -358,7 +355,7 @@ def evaluate(analysis: Analysis) -> list[Finding]:
                 "FS005",
                 call.symbol,
                 call.location,
-                f"Recognized {call.boundary} operation: {call.resolved_name}. No covering trace scope or complete recognized handler logging was found along all resolved caller routes within the scan bounds.",
+                f"Recognized {call.boundary} operation: {call.resolved_name}. No covering trace scope or complete recognized handler reporting was found along all resolved caller routes within the scan bounds.",
                 [
                     Recommendation(
                         "trace",

@@ -44,16 +44,39 @@ Exit codes: **0** means the scan completed without meeting the selected failure 
 
 ## What is implemented
 
-- Python AST collection, import aliases, package-relative imports, `src/` layouts, nested functions, and conservative call resolution through local classes and simple type annotations.
+- Python AST collection, import aliases, package-relative imports, `src/` layouts, nested functions, and conservative call resolution through local classes and simple or nullable type annotations.
+- Inferred edges from known class constructions to their explicit initializers, labeled as possible initializers in diagrams. Conflicting receiver types, decorated/customized construction, and inherited initializer lookup remain conservative.
 - Source-linked calls, handlers, logs, entrypoint-to-callee paths, and unresolved or ambiguous references.
 - Lexical exception scopes, bounded upstream reporting checks, explicit handler outcomes, simple constant branch pruning, and terminal-statement pruning.
 - Separate awaited and deferred coroutine calls, plus discarded `asyncio.create_task`/`ensure_future` handles.
 - Common network, persistence, serialization, filesystem, and subprocess boundaries, with configurable patterns for other libraries and application APIs.
 - Recognition of standard logging, structlog, loguru, common logger factory assignments, configured logging wrappers, and basic OpenTelemetry span context managers.
+- Traceback recognition for `logger.exception()`, constant truthy `exc_info`, and import-resolved `sys.exc_info()` including aliases.
 - Text and versioned JSON reports. Findings have stable IDs for unchanged source locations, code evidence, rule IDs, review priority, confidence, conditional recommendations, and unresolved assumptions.
 - Offline HTML execution diagrams and Mermaid exports, showing recognized instrumentation alongside recommendations at functions, operation boundaries, and exception handlers.
+- Supported property reads appear as inferred getter edges, including receivers obtained from annotated dictionary fields and `.values()` iteration.
+- Explicit contracts for diagnostic, stderr, and error-return reporting, with the reporting owner shown separately from logs.
+- Structural finding baselines, new/unchanged/resolved comparisons, and reasoned dismissals that remain visible in reports.
+
+## Repeatable review workflow
+
+```text
+flowsignal scan ./my-project --save-baseline baseline.json
+flowsignal scan ./my-project --baseline baseline.json --format html --output review.html
+flowsignal review dismiss baseline.json FINDING_FINGERPRINT --reason "Reviewed: the caller owns this outcome"
+flowsignal scan ./my-project --baseline baseline.json --fail-on medium --fail-on-new
+flowsignal review restore baseline.json FINDING_FINGERPRINT
+```
+
+Use the finding's `fingerprint` from JSON, text, or the HTML evidence panel. Dismissed findings retain their reason and remain visible; they are excluded from failure thresholds. Baselines tolerate comments, formatting, and line shifts in ordinary symbols. Incomplete comparisons mark absent findings **unverified**, and incomplete scans cannot replace a baseline. Recognition settings and scan scope must match.
+
+See the [review workflow guide](docs/REVIEW_WORKFLOW.md) for reporter contracts, supported property inference, baseline limitations, and a reproducible demonstration. These features support advisory reviews; they do not establish enterprise-wide accuracy or complete execution coverage.
+
+## Rules
 
 The rule set is intentionally a starting point:
+
+See [implementation research and improvement priorities](docs/RELATED_WORK.md) for the reviewed upstream projects, pinned sources, adopted ideas, validation, and remaining gaps.
 
 | Rule | Review candidate |
 | --- | --- |

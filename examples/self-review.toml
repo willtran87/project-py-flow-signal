@@ -1,0 +1,16 @@
+[flowsignal]
+entrypoints = ["flowsignal.cli.main"]
+
+# These are reviewed contracts for this project, not generic append/print rules.
+[[flowsignal.reporters]]
+pattern = "analysis.diagnostics.append"
+match = "expression"
+scope = "flowsignal.scanner.*"
+kind = "diagnostic"
+owner = "FlowSignal report diagnostics"
+
+[[flowsignal.reporters]]
+pattern = "builtins.print"
+scope = "flowsignal.cli.main"
+kind = "stderr"
+owner = "CLI caller"

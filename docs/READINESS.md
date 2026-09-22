@@ -1,5 +1,7 @@
 # Enterprise readiness assessment
 
+The latest [review-workflow increment](REVIEW_WORKFLOW.md) adds explicit reporting-owner contracts, supported property-getter edges, structural baselines and reasoned dismissals. Both original property omissions are now regression checks. The workload and test counts below are historical evidence for earlier revisions; current machine-readable validation should accompany deployment decisions.
+
 FlowSignal is suitable for a **supervised pilot and advisory instrumentation review**. It is not yet a validated whole-program analyzer or a release gate. Its general Python core requires no LangChain, LangGraph, or other workflow framework, and never imports or executes the scanned application. Configuration extends recognition of application APIs and logging wrappers.
 
 ## Soft spots addressed in this hardening pass
@@ -25,6 +27,8 @@ Context-manager coverage follows the possibility of exception suppression descri
 
 ## Validation evidence
 
+The workload measurements below describe the initial hardening revision. The subsequent [implementation research](RELATED_WORK.md) adds initializer edges, nullable receiver resolution, and `sys.exc_info()` recognition, with current self-scan evidence in [DOGFOOD.md](DOGFOOD.md).
+
 Local measurements used Windows 10 and Python 3.14.5. Times are single-run observations of the scanner, excluding fixture generation, JSON serialization, and diagram rendering; they are not performance guarantees or memory measurements.
 
 | Workload | Source files | Symbols | Calls | Scan time | Outcome |
@@ -36,9 +40,9 @@ The generated fixture alternates operations with and without a reporting owner. 
 
 The DFMEA scan read 6,624,640 source bytes, visited 746,139 AST nodes, and used 12,725 graph-work units. It retained **18,642 unresolved calls** and **2,159 diagnostics** (1,934 deferred generator expressions, 170 deferred lambdas, and 55 context-manager propagation uncertainties). There were 286 calls inside contexts with uncertain suppression behavior. Those limitations remain even though the scan status is `complete`. Its 844 findings have not been independently labeled as correct or incorrect. Measurements were taken while the two benchmark processes ran concurrently, so small timing differences from earlier runs should not be interpreted as a performance regression or improvement.
 
-The local suite contains 98 tests, covering the original scanner and diagrams plus the hardening cases. Windows tests skip actual symbolic-link creation when the account lacks that capability; simulated replacement and containment checks still run. Local verification uses Python 3.11 and 3.14. Browser verification checks the interactive sample at 2560×1600, 1440×1000, and 390×844, including keyboard navigation, export, overflow, node overlap, and absence of network requests or JavaScript errors.
+The local suite now contains 112 tests, covering the original scanner and diagrams, the hardening cases, and research-informed resolution changes. Windows tests skip actual symbolic-link creation when the account lacks that capability; simulated replacement and containment checks still run. Local verification uses Python 3.11 and 3.14. Browser verification checks the interactive sample at 2560×1600, 1440×1000, and 390×844, including keyboard navigation, export, overflow, node overlap, and absence of network requests or JavaScript errors.
 
-The repository includes a Windows/Linux CI matrix for Python 3.11 and 3.14. Adding the workflow does not establish that remote CI has run. Reproduce scan measurements with `scripts/benchmark_scan.py`; retain its JSON output with the revision being evaluated.
+The repository includes a Windows/Linux CI matrix for Python 3.11 and 3.14. [The initial published revision passed that matrix](https://github.com/willtran87/project-py-flow-signal/actions/runs/35679950366); that run predates the research-informed changes. Reproduce scan measurements with `scripts/benchmark_scan.py`; retain its JSON output with the revision being evaluated.
 
 ## Remaining material gaps
 
@@ -46,11 +50,11 @@ The repository includes a Windows/Linux CI matrix for Python 3.11 and 3.14. Addi
 2. **Instrumentation is evidence, not delivery.** Runtime filters, exporter setup, context-manager suppression, exception types from callees, and actual operational outcomes are not fully modeled. Log severity remains conditional on whether the operation recovered, degraded, or failed. Business criticality needs human context.
 3. **Accuracy has not been calibrated on an independent labeled corpus.** The real-codebase scan demonstrates practical execution, not a measured false-positive or false-negative rate. Review representative findings and known omissions before defining CI thresholds.
 4. **Budgets are not hard process isolation.** Python parsing occurs before AST checks. Directory discovery, serialization, and HTML projection have no hard time/RSS limit. The scanner retains its model in memory. Identity checks detect common file changes but do not provide an atomic snapshot of a concurrently modified repository. Use a stable checkout and a separately constrained worker when stronger limits are required.
-5. **Long-term review and integration remain basic.** Finding IDs depend on source locations. There is no persistent baseline, suppression lifecycle, cross-version reconciliation, SARIF export, or runtime trace import. Source omission is not comprehensive secret detection.
+5. **Long-term review and integration remain limited.** Structural baselines and reasoned dismissals now support repeated reviews while location-based report IDs remain. Dismissal expiry/authentication, cross-version reconciliation, SARIF export, and runtime trace import remain unimplemented. Source omission is not comprehensive secret detection.
 
 ## Recommended adoption
 
-The [self-dogfood review](DOGFOOD.md) adds direct behavioral evidence: CLI/report checks, five injected failure scenarios, three deliberately executed recovery probes, and a comparison with observed internal calls. It also records eight missing relationships between indexed symbols and the need to distinguish structured diagnostics and stderr from absent reporting. These findings reinforce the supervised-pilot assessment.
+The [self-dogfood review](DOGFOOD.md) adds direct behavioral evidence: CLI/report checks, five injected failure scenarios, three deliberately executed recovery probes, and a comparison with observed internal calls. The research-informed changes resolve six of the original eight missing relationships; two property relationships remain. Structured diagnostics and stderr are still not distinguished from absent reporting. These findings reinforce the supervised-pilot assessment.
 
 Start with a stable checkout and an advisory scan. Configure import roots for the repository layout, known entrypoints, and application boundary/logging wrappers where the default recognition cannot resolve them. Review scan status, diagnostics, and unresolved calls alongside the findings; inspect the suggested owner of each failure signal before adding logs. Keep INFO/WARNING/ERROR decisions tied to actual operational outcomes.
 

@@ -23,9 +23,11 @@ from .model import (
     Location,
     Log,
     Report,
+    ReportingSignal,
     Symbol,
     stable_id,
 )
+from .receivers import ReceiverIndex
 from .source_io import is_link, read_snapshot
 
 BUILTIN_NAMES = frozenset(dir(builtins))
@@ -46,6 +48,42 @@ def substitute(name: str, bindings: dict[str, str]) -> str:
         value = bindings[head]
         return value + (sep + tail if sep else "") if value else ""
     return name
+
+
+def annotation_type(node: ast.AST | None, bindings: dict[str, str]) -> str:
+    """Resolve one possible receiver type, never choose between concrete union arms."""
+
+    def alternatives(value: ast.AST | None, depth: int = 0) -> set[str]:
+        if depth > 32:
+            return {""}
+        if isinstance(value, ast.Constant):
+            if value.value is None:
+                return {"<none>"}
+            if isinstance(value.value, str):
+                try:
+                    parsed = ast.parse(value.value, mode="eval").body
+                except (SyntaxError, RecursionError):
+                    return {""}
+                return alternatives(parsed, depth + 1)
+        if isinstance(value, ast.BinOp) and isinstance(value.op, ast.BitOr):
+            return alternatives(value.left, depth + 1) | alternatives(
+                value.right, depth + 1
+            )
+        if isinstance(value, ast.Subscript):
+            wrapper = substitute(dotted(value.value), bindings)
+            if wrapper in {"typing.Optional", "typing_extensions.Optional"}:
+                return alternatives(value.slice, depth + 1) | {"<none>"}
+            if wrapper in {"typing.Union", "typing_extensions.Union"}:
+                arms = (
+                    value.slice.elts
+                    if isinstance(value.slice, ast.Tuple)
+                    else [value.slice]
+                )
+                return set().union(*(alternatives(arm, depth + 1) for arm in arms))
+        return {substitute(dotted(value), bindings)}
+
+    choices = alternatives(node) - {"<none>"}
+    return next(iter(choices)) if len(choices) == 1 else ""
 
 
 def outcomes(statements: list[ast.stmt]) -> set[str]:
@@ -127,6 +165,7 @@ class Unit:
     source: str
     tree: ast.Module
     bindings: dict[str, str] = field(default_factory=dict)
+    references: set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -146,13 +185,20 @@ class Analysis:
     definitions: list[Definition] = field(default_factory=list)
     calls: list[Call] = field(default_factory=list)
     logs: list[Log] = field(default_factory=list)
+    reporting_signals: list[ReportingSignal] = field(default_factory=list)
     handlers: dict[str, Handler] = field(default_factory=dict)
     finalizers: list[tuple[str, Location, list[str]]] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
     by_name: dict[str, list[Symbol]] = field(default_factory=lambda: defaultdict(list))
     classes: set[str] = field(default_factory=set)
+    class_nodes: dict[str, list[ast.ClassDef]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    class_units: dict[str, Unit] = field(default_factory=dict)
+    receiver_index: ReceiverIndex | None = None
     source_lines: dict[str, list[str]] = field(default_factory=dict)
     binding_cache: dict[str, dict[str, str]] = field(default_factory=dict)
+    reference_cache: dict[str, set[str]] = field(default_factory=dict)
     ambiguous_modules: set[str] = field(default_factory=set)
     inventory: list[dict] = field(default_factory=list)
     stats: dict[str, int] = field(
@@ -191,7 +237,7 @@ class Analysis:
 
 
 class BindingCollector(ast.NodeVisitor):
-    """Collect single bindings; repeated assignments deliberately become unresolved."""
+    """Keep agreed receiver types; conflicting or unknown bindings stay unresolved."""
 
     def __init__(
         self,
@@ -203,9 +249,11 @@ class BindingCollector(ast.NodeVisitor):
         self.unit, self.base, self.classes = unit, base, classes
         self.scope = scope or unit.module
         self.values: dict[str, list[str]] = defaultdict(list)
+        self.references: set[str] = set()
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
+            self.references.add(alias.asname or alias.name.split(".")[0])
             self.values[alias.asname or alias.name.split(".")[0]].append(
                 alias.name if alias.asname else alias.name.split(".")[0]
             )
@@ -224,17 +272,30 @@ class BindingCollector(ast.NodeVisitor):
             module = node.module or ""
         for alias in node.names:
             if alias.name != "*":
+                self.references.add(alias.asname or alias.name)
                 self.values[alias.asname or alias.name].append(
                     ".".join(filter(None, [module, alias.name]))
                 )
 
     def current(self) -> dict[str, str]:
         return self.base | {
-            name: values[0] if len(values) == 1 else ""
+            name: values[0] if len(set(values)) == 1 else ""
             for name, values in self.values.items()
         }
 
+    def current_references(self, base: set[str]) -> set[str]:
+        # Receiver types do not imply a class object: instance() may call __call__.
+        return (base - self.values.keys()) | {
+            name for name in self.references if len(self.values[name]) == 1
+        }
+
     def value_type(self, value: ast.AST | None) -> str:
+        if isinstance(value, ast.Name):
+            name = self.current().get(value.id, "")
+            return name if name in self.classes else ""
+        if isinstance(value, ast.BoolOp) and isinstance(value.op, ast.Or):
+            choices = {self.value_type(arm) for arm in value.values}
+            return next(iter(choices)) if len(choices) == 1 else ""
         if not isinstance(value, ast.Call):
             return ""
         name = substitute(dotted(value.func), self.current())
@@ -261,7 +322,7 @@ class BindingCollector(ast.NodeVisitor):
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         if isinstance(node.target, ast.Name):
-            annotation = substitute(dotted(node.annotation), self.current())
+            annotation = annotation_type(node.annotation, self.current())
             self.values[node.target.id].append(
                 self.value_type(node.value) or annotation
             )
@@ -287,6 +348,7 @@ class BindingCollector(ast.NodeVisitor):
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self.values[node.name].append(f"{self.scope}.{node.name}")
+        self.references.add(node.name)
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
         pass
@@ -326,8 +388,10 @@ def scoped_bindings(analysis: Analysis, definition: Definition) -> dict[str, str
     if definition.symbol.id in analysis.binding_cache:
         return dict(analysis.binding_cache[definition.symbol.id])
     base = definition.unit.bindings
+    references = definition.unit.references
     if definition.parent is not None:
         base = scoped_bindings(analysis, definition.parent)
+        references = analysis.reference_cache[definition.parent.symbol.id]
     collector = BindingCollector(
         definition.unit, base, analysis.classes, definition.symbol.qualified_name
     )
@@ -340,15 +404,10 @@ def scoped_bindings(analysis: Analysis, definition: Definition) -> dict[str, str
             *([arguments.vararg] if arguments.vararg else []),
             *([arguments.kwarg] if arguments.kwarg else []),
         ]:
-            annotation = arg.annotation
-            if isinstance(annotation, ast.Constant) and isinstance(
-                annotation.value, str
-            ):
-                try:
-                    annotation = ast.parse(annotation.value, mode="eval").body
-                except (SyntaxError, RecursionError):
-                    annotation = None
-            collector.values[arg.arg].append(substitute(dotted(annotation), base))
+            annotation = (
+                None if arg in (arguments.vararg, arguments.kwarg) else arg.annotation
+            )
+            collector.values[arg.arg].append(annotation_type(annotation, base))
         positional = [*arguments.posonlyargs, *arguments.args]
         if (
             definition.class_name
@@ -363,6 +422,9 @@ def scoped_bindings(analysis: Analysis, definition: Definition) -> dict[str, str
         if f"{definition.unit.module}.{value}" in analysis.classes:
             bindings[name] = f"{definition.unit.module}.{value}"
     analysis.binding_cache[definition.symbol.id] = bindings
+    analysis.reference_cache[definition.symbol.id] = collector.current_references(
+        references
+    )
     return dict(bindings)
 
 
@@ -406,6 +468,8 @@ def index_definitions(analysis: Analysis, unit: Unit) -> None:
             elif isinstance(node, ast.ClassDef):
                 qualified = ".".join([unit.module, *names, node.name])
                 analysis.classes.add(qualified)
+                analysis.class_nodes[qualified].append(node)
+                analysis.class_units[qualified] = unit
                 walk(node.body, [*names, node.name], scopes, qualified, parent)
             else:
                 # Definitions can be nested under if/try/with, without adding a scope.
@@ -570,6 +634,13 @@ class FactVisitor(ast.NodeVisitor):
             if isinstance(definition.node, ast.Module)
             else scoped_bindings(analysis, definition)
         )
+        self.references = (
+            self.unit.references
+            if isinstance(definition.node, ast.Module)
+            else analysis.reference_cache[definition.symbol.id]
+        )
+        self.receiver_scope = analysis.receiver_index.scope(definition)
+        self.property_shadows: set[str] = set()
 
     def location(self, node: ast.AST) -> Location:
         return Location(
@@ -612,6 +683,33 @@ class FactVisitor(ast.NodeVisitor):
                 return candidate, symbols[0].id, resolution
             if len(symbols) > 1:
                 return candidate, None, "ambiguous"
+            classes = self.analysis.class_nodes.get(candidate, [])
+            if len(classes) > 1:
+                return candidate, None, "ambiguous"
+            if classes and raw.split(".")[0] in self.references:
+                initializers = self.analysis.by_name.get(candidate + ".__init__", [])
+                if len(classes) > 1 or len(initializers) > 1:
+                    return candidate, None, "ambiguous"
+                cls = classes[0]
+                customized = (
+                    cls.decorator_list
+                    or cls.keywords
+                    or any(
+                        isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+                        and (
+                            item.name == "__new__"
+                            or item.name == "__init__"
+                            and item.decorator_list
+                        )
+                        for item in cls.body
+                    )
+                )
+                if (
+                    initializers
+                    and not customized
+                    and initializers[0].kind == "function"
+                ):
+                    return candidate, initializers[0].id, "inferred_constructor"
         if name in BUILTIN_NAMES and name not in self.bindings:
             return "builtins." + name, None, "builtin"
         if raw.split(".")[0] in self.bindings and self.bindings[raw.split(".")[0]]:
@@ -659,6 +757,8 @@ class FactVisitor(ast.NodeVisitor):
         ]:
             self.visit(expression)
         previous = self.bindings
+        previous_references = self.references
+        previous_shadows = set(self.property_shadows)
         collector = BindingCollector(
             self.unit,
             previous,
@@ -668,13 +768,18 @@ class FactVisitor(ast.NodeVisitor):
         for statement in node.body:
             collector.visit(statement)
         self.bindings = collector.current()
+        self.references = collector.current_references(previous_references)
+        self.property_shadows.update(collector.values)
         try:
             self.block(node.body)
         finally:
             self.bindings = previous
+            self.references = previous_references
+            self.property_shadows = previous_shadows
 
     def visit_ListComp(self, node: ast.ListComp | ast.SetComp | ast.DictComp) -> None:
         previous = self.bindings
+        previous_shadows = set(self.property_shadows)
         self.bindings = dict(previous)
         initial_depth = self.conditional
         try:
@@ -683,6 +788,7 @@ class FactVisitor(ast.NodeVisitor):
                 for target in ast.walk(generator.target):
                     if isinstance(target, ast.Name):
                         self.bindings[target.id] = ""
+                        self.property_shadows.add(target.id)
                 self.conditional += 1
                 for condition in generator.ifs:
                     self.visit(condition)
@@ -693,6 +799,7 @@ class FactVisitor(ast.NodeVisitor):
                 self.visit(node.elt)
         finally:
             self.bindings, self.conditional = previous, initial_depth
+            self.property_shadows = previous_shadows
 
     visit_SetComp = visit_ListComp
     visit_DictComp = visit_ListComp
@@ -914,7 +1021,32 @@ class FactVisitor(ast.NodeVisitor):
     def visit_Call(self, node: ast.Call) -> None:
         # Arguments and receiver expressions execute before the outer call.
         self.generic_visit(node)
+        self.record_call(node)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        self.generic_visit(node)
+        getter = self.analysis.receiver_index.getter(node, self.receiver_scope)
+        # A comprehension target can shadow a typed outer variable.
+        shadowed = any(
+            isinstance(part, ast.Name) and part.id in self.property_shadows
+            for part in ast.walk(node.value)
+        )
+        if getter and not shadowed:
+            implicit = ast.copy_location(
+                ast.Call(func=node, args=[], keywords=[]), node
+            )
+            self.record_call(implicit, getter)
+
+    def record_call(self, node: ast.Call, getter: Symbol | None = None) -> None:
         name, target, resolution = self.resolve(node.func)
+        if getter:
+            name, target, resolution = (
+                getter.qualified_name,
+                getter.id,
+                "inferred_property",
+            )
+        elif self.analysis.receiver_index.getter(node.func, self.receiver_scope):
+            name, target, resolution = "<property-result>", None, "unresolved"
         location = self.location(node)
         parent = self.parents[-2] if len(self.parents) > 1 else None
         boundary = (
@@ -965,6 +1097,8 @@ class FactVisitor(ast.NodeVisitor):
             for symbol in self.analysis.by_name.get(name, [])
         ):
             call.execution = "deferred_generator"
+        if getter:
+            call.execution = "implicit_property"
         call.trace_failure_coverage = bool(
             self.trace_failure_scopes
         ) and not call.execution.startswith("deferred_")
@@ -973,6 +1107,51 @@ class FactVisitor(ast.NodeVisitor):
         self.analysis.calls.append(call)
         if self.handler:
             self.analysis.handlers[self.handler].calls.append(call.id)
+        if getter:
+            return
+        for reporter in self.analysis.config.reporters:
+            expression_match = reporter.get("match") == "expression"
+            candidate = dotted(node.func) if expression_match else name
+            if not expression_match and resolution in {"unresolved", "ambiguous"}:
+                continue
+            if not fnmatch.fnmatchcase(candidate, reporter["pattern"]) or not matches(
+                self.symbol.qualified_name, [reporter.get("scope", "*")]
+            ):
+                continue
+            if reporter["kind"] == "error_return" and not isinstance(
+                parent, ast.Return
+            ):
+                continue
+            if reporter["kind"] == "stderr":
+                if name == "builtins.print":
+                    destination = next(
+                        (kw.value for kw in node.keywords if kw.arg == "file"), None
+                    )
+                    dest_name, _, dest_resolution = self.resolve(destination)
+                    if dest_name != "sys.stderr" or dest_resolution in {
+                        "unresolved",
+                        "ambiguous",
+                    }:
+                        continue
+                elif name != "sys.stderr.write":
+                    continue
+            signal = ReportingSignal(
+                self.symbol.id,
+                location,
+                self.handler,
+                reporter["kind"],
+                reporter["owner"],
+                reporter["pattern"],
+                "configured expression contract"
+                if expression_match
+                else "configured resolved API contract",
+                self.conditional > self.handler_depth
+                or call.execution.startswith("deferred_"),
+            )
+            self.analysis.reporting_signals.append(signal)
+            if self.handler:
+                self.analysis.handlers[self.handler].reporting_signals.append(signal)
+            break
         level = None
         for custom in self.analysis.config.loggers:
             if fnmatch.fnmatchcase(name, custom["pattern"]):
@@ -1053,6 +1232,12 @@ class FactVisitor(ast.NodeVisitor):
                 if exc is None
                 else isinstance(exc, ast.Constant) and bool(exc.value)
             )
+            if isinstance(exc, ast.Call) and not exc.args and not exc.keywords:
+                context_name, _, context_resolution = self.resolve(exc.func)
+                exception_context = (
+                    context_name == "sys.exc_info"
+                    and context_resolution not in {"unresolved", "ambiguous"}
+                )
             log = Log(
                 self.symbol.id,
                 location,
@@ -1362,6 +1547,9 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
             analysis.units.append(unit)
             analysis.definitions.extend(staging.definitions)
             analysis.classes.update(staging.classes)
+            analysis.class_units.update(staging.class_units)
+            for name, nodes in staging.class_nodes.items():
+                analysis.class_nodes[name].extend(nodes)
             for name, symbols in staging.by_name.items():
                 analysis.by_name[name].extend(symbols)
             record["status"] = "analyzed"
@@ -1388,6 +1576,7 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
             for statement in unit.tree.body:
                 collector.visit(statement)
             unit.bindings = collector.current()
+            unit.references = collector.current_references(set())
         except RecursionError:
             analysis.diagnostics.append(
                 Diagnostic(
@@ -1410,6 +1599,7 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
             for symbol in symbols:
                 symbol.id += f"@{symbol.location.line}"
     mark_entrypoints(analysis)
+    analysis.receiver_index = ReceiverIndex(analysis)
     for definition in analysis.definitions:
         try:
             visitor = FactVisitor(analysis, definition)
@@ -1426,6 +1616,9 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
     from .rules import evaluate
 
     findings = evaluate(analysis)
+    from .baseline import fingerprint_findings
+
+    fingerprint_findings(analysis, findings)
     if not analysis.units:
         analysis.diagnostics.append(
             Diagnostic("no_sources", "No readable Python sources were scanned.")
@@ -1442,4 +1635,5 @@ def scan(path: str | Path, config: Config | None = None) -> Report:
         settings=config.to_dict(),
         inventory=analysis.inventory,
         analysis_stats=analysis.stats,
+        reporting_signals=analysis.reporting_signals,
     )

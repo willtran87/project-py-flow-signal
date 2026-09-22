@@ -19,9 +19,10 @@
 <div class="shell">
 <header><div class="brand"><span class="mark" aria-hidden="true">↗</span> FlowSignal <small>PYTHON OBSERVABILITY REVIEW</small></div>
 <div class="intro"><div><h1>Execution paths &amp; instrumentation</h1><p class="subtitle">Follow possible calls. Inspect the signals already present and the changes worth reviewing.</p></div><span class="local">● &nbsp; Local, deterministic analysis</span></div>
-<div class="metrics" aria-label="Report summary"><div class="metric"><strong id="files">0</strong><span>source files<br>scanned</span></div><div class="metric"><strong id="symbols">0</strong><span>symbols<br>mapped</span></div><div class="metric"><strong id="signals">0</strong><span>recognized logs<br>in the repository</span></div><div class="metric"><strong id="findings">0</strong><span>recommendation<br>candidates</span></div></div>
+<div class="metrics" aria-label="Report summary"><div class="metric"><strong id="files">0</strong><span>source files<br>scanned</span></div><div class="metric"><strong id="symbols">0</strong><span>symbols<br>mapped</span></div><div class="metric"><strong id="signals">0</strong><span>recognized logs<br>and configured reporters</span></div><div class="metric"><strong id="findings">0</strong><span>recommendation<br>candidates</span></div></div>
 </header>
 <p id="scan-status" class="scan-status" role="status"></p>
+<section id="baseline-review" class="scan-status" hidden aria-label="Baseline comparison"><p id="baseline-summary"></p><details><summary>Resolved and unverified findings</summary><div id="baseline-changes"></div></details></section>
 <main class="workspace">
 <section class="graph-panel" aria-labelledby="graph-title">
 <div class="toolbar"><div class="search"><label for="search">FOCUS ON A FUNCTION OR MODULE</label><input type="search" id="search" autocomplete="off" placeholder="Search a symbol or file…" aria-controls="results"><div id="results" class="results" aria-label="Matching symbols"></div></div><label class="check"><input id="callers" type="checkbox" checked>Include callers</label><div class="limit"><label for="limit">NODE LIMIT</label><select id="limit" aria-label="Diagram node limit"></select></div></div>
@@ -106,7 +107,7 @@ function renderGraph(){
  svg('text',{x:16,y:66,fill:'#68788d','font-family':'Consolas, monospace','font-size':10},shorten(place(node.location),39),g);
  let row=88;
  function band(label,fill,color){svg('rect',{x:12,y:row-12,width:nodeWidth-24,height:23,rx:5,fill},undefined,g);svg('text',{x:20,y:row+3,fill:color,'font-family':'Segoe UI, Arial, sans-serif','font-size':10,'font-weight':650},shorten(label,43),g);row+=28}
- if(existing)band('EXISTING   '+[...new Set(node.existing.map(s=>s.level||'TRACE'))].join(' · '),'#e6f4ed','#12664f');
+ if(existing)band('EXISTING   '+[...new Set(node.existing.map(s=>s.level||s.kind.toUpperCase()))].join(' · '),'#e6f4ed','#12664f');
  if(suggested)band('REVIEW   '+recommendationLabels(node).join(' / '),'#fff3da','#845211');
  if(!existing&&!suggested)band('No instrumentation recognized','#f0f3f7','#66758a');
  if(node.unresolved_count&&row<138)svg('text',{x:17,y:row+2,fill:'#77859a','font-family':'Segoe UI, Arial, sans-serif','font-size':10},`${node.unresolved_count} unresolved call${node.unresolved_count===1?'':'s'}`,g);
@@ -128,14 +129,17 @@ function selectNode(id){
  const panel=$('detail');panel.replaceChildren();
  function section(title,count){const section=element('section',null,'detail-section',panel),heading=element('h3',title,'section-heading',section);element('span',String(count),'count',heading);return section}
  const present=section('Currently recognized',node.existing.length);
- if(!node.existing.length)element('p','No log or trace scope is recognized at this node. A wrapper, framework, or reporting owner elsewhere may provide instrumentation.','empty',present);
- for(const signal of node.existing){const item=element('div',null,'signal',present);element('p',signal.text,null,item);element('small',`${place(signal.location)}${signal.conditional?' · conditional path':''}`,null,item)}
+ if(!node.existing.length)element('p','No log, trace scope, or configured reporter is recognized at this node. A reporting owner elsewhere may provide instrumentation.','empty',present);
+ for(const signal of node.existing){const item=element('div',null,'signal',present);element('p',signal.text,null,item);element('small',`${place(signal.location)}${signal.conditional?' · conditional path':''}${signal.basis?' · '+signal.basis:''}`,null,item)}
  const recommended=section('Recommended for review',node.findings.length);
  if(!node.findings.length)element('p','No recommendation is attached to this node. This does not establish complete coverage.','empty',recommended);
  for(const id of node.findings){const finding=data.findings[id],card=element('article',null,'finding',recommended),head=element('div',null,'finding-title',card);
  element('strong',`${finding.rule_id} · ${finding.title}`,null,head);element('small',`${finding.priority} review priority · ${finding.confidence} confidence`,null,head);
+ element('p',`${finding.baseline_status||'Not compared'} · ${finding.review_status||'active'}`,'fact',head);
+ if(finding.review_reason)element('p','Review reason: '+finding.review_reason,'fact',head);
  for(const r of finding.recommendations){const item=element('div',null,'recommendation',card);element('span',r.level||r.kind.replaceAll('_',' ').toUpperCase(),'pill',item);element('p',r.action,null,item);element('p','When: '+r.condition,'when',item);if(r.context_fields.length)element('p','Useful fields: '+r.context_fields.join(', '),'location',item)}
  const proof=element('details',null,null,card);element('summary','Source evidence & assumptions',null,proof);
+ element('p','Fingerprint: '+finding.fingerprint,'location',proof);
  for(const evidence of finding.evidence){element('p',place(evidence.location),'location',proof);element('pre',evidence.code,null,proof);element('p',evidence.fact,'fact',proof)}
  for(const assumption of finding.assumptions)element('p',assumption,'fact',proof);
  if(finding.paths.length){element('p','Possible caller paths:','fact',proof);for(const path of finding.paths)element('p',path.join(' → '),'location',proof)}
@@ -153,7 +157,8 @@ $('search').addEventListener('keydown',event=>{if(event.key==='Escape')$('result
 document.addEventListener('click',event=>{if(!event.target.closest('.search'))$('results').replaceChildren()});
 for(const value of [...new Set([20,40,60,100,150,200,data.max_nodes])].sort((a,b)=>a-b)){const option=element('option',String(value),null,$('limit'));option.value=String(value)}$('limit').value=String(data.max_nodes);
 $('download').addEventListener('click',()=>{const copy=$('graph').cloneNode(true);copy.removeAttribute('style');copy.setAttribute('xmlns',NS);const xml=new XMLSerializer().serializeToString(copy),url=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml'})),link=document.createElement('a');link.href=url;link.download='flowsignal-execution-path.svg';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)});
-$('files').textContent=data.summary.files_scanned.toLocaleString();$('symbols').textContent=data.summary.symbols.toLocaleString();$('signals').textContent=data.nodes.reduce((count,node)=>count+node.existing.filter(s=>s.kind==='log').length,0).toLocaleString();$('findings').textContent=data.summary.findings.toLocaleString();
+$('files').textContent=data.summary.files_scanned.toLocaleString();$('symbols').textContent=data.summary.symbols.toLocaleString();$('signals').textContent=data.nodes.reduce((count,node)=>count+node.existing.filter(s=>s.kind!=='trace').length,0).toLocaleString();$('findings').textContent=data.summary.findings.toLocaleString();
+if(data.baseline){$('baseline-review').hidden=false;const c=data.baseline.counts;$('baseline-summary').textContent=`Compared with baseline: ${c.new} new · ${c.unchanged} unchanged · ${c.resolved} resolved · ${c.unverified} unverified · ${c.dismissed} dismissed. Dismissed findings remain visible.`;for(const state of ['resolved','unverified']){for(const finding of data.baseline[state].slice(0,100))element('p',`${state}: ${finding.rule_id} · ${finding.symbol} · ${place(finding.location)}`,'location',$('baseline-changes'));if(data.baseline[state].length>100)element('p',`Showing 100 of ${data.baseline[state].length} ${state} findings; the JSON report contains the full list.`,'fact',$('baseline-changes'))}}
 const incomplete=data.summary.status==='incomplete';
 $('scan-status').textContent=incomplete?'Incomplete scan — files, resolution, or analysis work were omitted. Review the diagnostics before interpreting missing findings.':'Scan completed within its configured scope and budgets. Static analysis still leaves unresolved behavior; completion does not establish complete coverage.';
 $('scan-status').classList.toggle('incomplete',incomplete);

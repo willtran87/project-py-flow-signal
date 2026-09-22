@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from .baseline import compare, make_baseline, read_baseline, review
 from .config import Config, load_config
 from .diagram import render_html, render_mermaid
 from .model import INCOMPLETE_CODES, Report
@@ -37,6 +38,11 @@ def render_text(report: Report) -> str:
                 f"  {location.file}:{location.line}  {finding.symbol}",
             ]
         )
+        lines.append(
+            f"  Fingerprint: {finding.fingerprint}; review: {finding.review_status}; baseline: {finding.baseline_status or 'not compared'}"
+        )
+        if finding.review_reason:
+            lines.append(f"  Review reason: {finding.review_reason}")
         for evidence in finding.evidence:
             lines.extend(
                 [
@@ -60,6 +66,19 @@ def render_text(report: Report) -> str:
     for diagnostic in report.diagnostics:
         where = f" {diagnostic.file or ''}{':' + str(diagnostic.line) if diagnostic.line else ''}".rstrip()
         lines.append(f"Diagnostic [{diagnostic.code}]{where}: {diagnostic.message}")
+    for signal in report.reporting_signals:
+        lines.append(
+            f"Configured {signal.kind} reporter: {signal.owner} at {signal.location.file}:{signal.location.line}; {signal.basis}; conditional={signal.conditional}"
+        )
+    if report.baseline:
+        lines.append(
+            "Baseline changes: " + json.dumps(report.baseline["counts"], sort_keys=True)
+        )
+        for status in ("resolved", "unverified"):
+            for entry in report.baseline[status]:
+                lines.append(
+                    f"  {status}: {entry['rule_id']} {entry['symbol']} [{entry['fingerprint']}]"
+                )
     lines.extend(
         [
             "",
@@ -69,7 +88,7 @@ def render_text(report: Report) -> str:
     return "\n".join(lines) + "\n"
 
 
-def write_report(path: Path, content: str) -> None:
+def validate_output_path(path: Path) -> None:
     if path.suffix.lower() in {
         ".py",
         ".pyw",
@@ -96,6 +115,10 @@ def write_report(path: Path, content: str) -> None:
             raise ValueError(
                 "Report output must be a regular file, not a link or directory"
             )
+
+
+def write_report(path: Path, content: str) -> None:
+    validate_output_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     name = None
     try:
@@ -127,6 +150,17 @@ def parser() -> argparse.ArgumentParser:
         "scan", help="Scan Python sources without importing or executing them"
     )
     command.add_argument("path", nargs="?", default=".")
+    command.add_argument(
+        "--baseline", type=Path, help="Compare with a saved structural baseline"
+    )
+    command.add_argument(
+        "--save-baseline", type=Path, help="Save this complete scan as a baseline"
+    )
+    command.add_argument(
+        "--fail-on-new",
+        action="store_true",
+        help="Apply --fail-on only to new, active findings; requires --baseline",
+    )
     command.add_argument(
         "--source-root",
         action="append",
@@ -184,6 +218,13 @@ def parser() -> argparse.ArgumentParser:
         help="Review INFO lifecycle events for explicitly configured entrypoints",
     )
     commands.add_parser("rules", help="List deterministic rule IDs")
+    decision = commands.add_parser(
+        "review", help="Record a dismissal or restore findings in a baseline"
+    )
+    decision.add_argument("action", choices=["dismiss", "restore"])
+    decision.add_argument("baseline", type=Path)
+    decision.add_argument("fingerprint")
+    decision.add_argument("--reason", help="Required explanation for a dismissal")
     return result
 
 
@@ -194,6 +235,16 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{identity}  {title}")
         return 0
     try:
+        if args.command == "review":
+            document = read_baseline(args.baseline)
+            review(document, args.fingerprint, args.action, args.reason)
+            write_report(
+                args.baseline, json.dumps(document, indent=2, ensure_ascii=True) + "\n"
+            )
+            return 0
+        if args.fail_on_new and not args.baseline:
+            raise ValueError("--fail-on-new requires --baseline")
+        previous = read_baseline(args.baseline) if args.baseline else None
         target = Path(args.path).absolute()
         root = target.parent if target.is_file() else target
         config_path = args.config
@@ -207,6 +258,23 @@ def main(argv: list[str] | None = None) -> int:
                 None,
             )
         config = load_config(config_path) if config_path else Config()
+        protected = {p.resolve() for p in (config_path, args.baseline) if p}
+        if args.output and args.output.resolve() in protected:
+            raise ValueError(
+                "Report output must not overwrite configuration or baseline input"
+            )
+        if args.save_baseline and (
+            config_path
+            and args.save_baseline.resolve() == config_path.resolve()
+            or args.output
+            and args.save_baseline.resolve() == args.output.resolve()
+        ):
+            raise ValueError(
+                "Baseline output must differ from configuration and report output"
+            )
+        for output in (args.output, args.save_baseline):
+            if output:
+                validate_output_path(output)
         config.entrypoints.extend(args.entrypoint)
         config.exclude.extend(args.exclude)
         config.source_roots.extend(args.source_root)
@@ -221,6 +289,13 @@ def main(argv: list[str] | None = None) -> int:
             if rank[finding.confidence] >= rank[args.min_confidence]
         ]
         report.settings["min_confidence"] = args.min_confidence
+        if previous is not None:
+            compare(report, previous)
+        baseline_content = (
+            json.dumps(make_baseline(report), indent=2, ensure_ascii=True) + "\n"
+            if args.save_baseline
+            else None
+        )
         if args.format == "json":
             content = json.dumps(report.to_dict(), indent=2, ensure_ascii=True) + "\n"
         elif args.format == "html":
@@ -237,12 +312,16 @@ def main(argv: list[str] | None = None) -> int:
             write_report(args.output, content)
         else:
             sys.stdout.write(content)
+        if args.save_baseline:
+            write_report(args.save_baseline, baseline_content)
         if any(diagnostic.code in INCOMPLETE for diagnostic in report.diagnostics):
             return 2
         return int(
             args.fail_on != "none"
             and any(
                 rank[finding.priority] >= rank[args.fail_on]
+                and finding.review_status != "dismissed"
+                and (not args.fail_on_new or finding.baseline_status == "new")
                 for finding in report.findings
             )
         )

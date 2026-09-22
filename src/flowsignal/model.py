@@ -45,6 +45,10 @@ class Finding:
     assumptions: list[str] = field(default_factory=list)
     paths: list[list[str]] = field(default_factory=list)
     origin: str = "deterministic"
+    fingerprint: str = ""
+    baseline_status: str | None = None
+    review_status: str = "active"
+    review_reason: str | None = None
 
 
 @dataclass
@@ -117,6 +121,18 @@ class Log:
 
 
 @dataclass
+class ReportingSignal:
+    symbol: str
+    location: Location
+    handler: str | None
+    kind: str
+    owner: str
+    pattern: str
+    basis: str
+    conditional: bool = False
+
+
+@dataclass
 class Handler:
     id: str
     symbol: str
@@ -126,6 +142,7 @@ class Handler:
     logs: list[Log] = field(default_factory=list)
     calls: list[str] = field(default_factory=list)
     conditional: bool = False
+    reporting_signals: list[ReportingSignal] = field(default_factory=list)
 
     @property
     def catches_all(self) -> bool:
@@ -151,6 +168,8 @@ LIMITATIONS = [
     "Runtime logger levels, filters, exporters, framework exception handlers, and log delivery are not verified.",
     "Business outcomes and expected versus degraded fallback behavior require project context; log levels are conditional recommendations.",
     "Generator execution timing, ExceptionGroup splitting, implicit failures, and context-manager suppression are not modeled fully.",
+    "Configured outcome reporters are user-declared contracts; successful publication, consumption and delivery are not verified.",
+    "Property edges infer supported read-only getters from receiver annotations and simple assignments; inherited descriptors, setters and dynamic attribute hooks remain limited.",
 ]
 
 
@@ -170,6 +189,8 @@ class Report:
     schema_version: str = "flowsignal-report-1"
     scanner_version: str = "0.1.0"
     limitations: list[str] = field(default_factory=lambda: list(LIMITATIONS))
+    reporting_signals: list[ReportingSignal] = field(default_factory=list)
+    baseline: dict[str, Any] | None = None
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -199,6 +220,11 @@ class Report:
             else "complete",
             "findings": len(self.findings),
             "diagnostics": len(self.diagnostics),
+            "reporting_signals": len(self.reporting_signals),
+            "dismissed_findings": sum(
+                f.review_status == "dismissed" for f in self.findings
+            ),
+            "baseline": self.baseline["counts"] if self.baseline else None,
         }
 
     def to_dict(self) -> dict[str, Any]:
