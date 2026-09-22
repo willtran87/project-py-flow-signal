@@ -97,6 +97,16 @@ def render_text(report: Report) -> str:
             "Incremental scan: "
             + json.dumps(report.analysis_stats["cache"], sort_keys=True)
         )
+    for name in (
+        "operation_outcomes",
+        "contextual_calls",
+        "task_ownership",
+        "retry_scopes",
+    ):
+        for record in getattr(report, name):
+            lines.append(
+                name.replace("_", " ") + ": " + json.dumps(record, sort_keys=True)
+            )
     if report.runtime:
         if report.runtime.get("run_comparison"):
             lines.append(

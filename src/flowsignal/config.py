@@ -25,6 +25,15 @@ DEFAULT_EXCLUDES = [
     ".artifacts",
 ]
 LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+OUTCOMES = {
+    "expected_rejection",
+    "successful_recovery",
+    "degraded_recovery",
+    "failed_operation",
+    "cancellation",
+    "successful_operation",
+    "unknown",
+}
 
 
 @dataclass
@@ -35,6 +44,11 @@ class Config:
     boundaries: list[dict[str, str]] = field(default_factory=list)
     loggers: list[dict[str, str]] = field(default_factory=list)
     reporters: list[dict[str, str]] = field(default_factory=list)
+    operations: list[dict[str, str]] = field(default_factory=list)
+    registrations: list[dict] = field(default_factory=list)
+    retries: list[dict[str, str]] = field(default_factory=list)
+    max_cache_bytes: int = 256_000_000
+    max_cache_entries: int = 16
     max_files: int = 10_000
     max_file_bytes: int = 2_000_000
     max_path_depth: int = 8
@@ -51,6 +65,76 @@ class Config:
     max_discovery_entries: int = 100_000
 
     def validate(self) -> None:
+        if (
+            not isinstance(self.retries, list)
+            or len(self.retries) > 1000
+            or any(
+                not isinstance(r, dict)
+                or set(r) != {"pattern", "owner"}
+                or any(not isinstance(v, str) or not v.strip() for v in r.values())
+                for r in self.retries
+            )
+        ):
+            raise ValueError("retries requires at most 1000 pattern/owner contracts")
+        if not isinstance(self.operations, list) or len(self.operations) > 1000:
+            raise ValueError("operations must contain at most 1000 contracts")
+        for record in self.operations:
+            if (
+                not isinstance(record, dict)
+                or not {"pattern", "exit", "outcome", "owner"} <= record.keys()
+                or record.keys()
+                - {
+                    "pattern",
+                    "exit",
+                    "outcome",
+                    "owner",
+                    "importance",
+                    "signal",
+                    "scope",
+                }
+                or any(not isinstance(v, str) or not v.strip() for v in record.values())
+            ):
+                raise ValueError(
+                    "Operation contracts require pattern, exit, outcome, owner; optional importance, signal, scope"
+                )
+            if (
+                record["outcome"] not in OUTCOMES
+                or record["exit"]
+                not in {
+                    "return",
+                    "raise",
+                    "fallthrough",
+                    "break",
+                    "continue",
+                    "unknown",
+                }
+                or record.get("importance", "routine")
+                not in {"routine", "important", "critical"}
+                or record.get("scope", "handler") not in {"handler", "operation"}
+                or record.get("signal", "auto")
+                not in {"auto", "log", "metric", "trace", "no_additional_log"}
+            ):
+                raise ValueError(
+                    "Invalid operation outcome, exit, scope, importance, or signal"
+                )
+        if not isinstance(self.registrations, list) or len(self.registrations) > 1000:
+            raise ValueError("registrations must contain at most 1000 contracts")
+        for record in self.registrations:
+            if (
+                not isinstance(record, dict)
+                or set(record) != {"pattern", "argument"}
+                or not isinstance(record["pattern"], str)
+                or not record["pattern"].strip()
+                or not (
+                    type(record["argument"]) is int
+                    and 0 <= record["argument"] <= 100
+                    or isinstance(record["argument"], str)
+                    and record["argument"].isidentifier()
+                )
+            ):
+                raise ValueError(
+                    "Registration requires pattern and argument (position 0-100 or keyword name)"
+                )
         for name in ("lifecycle_info", "include_source"):
             if type(getattr(self, name)) is not bool:
                 raise ValueError(f"{name} must be true or false")
@@ -70,6 +154,8 @@ class Config:
                     "source_roots must be relative directories within the scan root"
                 )
         for name, maximum in (
+            ("max_cache_bytes", 1_000_000_000),
+            ("max_cache_entries", 1000),
             ("max_files", 100_000),
             ("max_file_bytes", 20_000_000),
             ("max_path_depth", 30),

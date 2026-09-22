@@ -45,6 +45,8 @@ Exit codes: **0** means the scan completed without meeting the selected failure 
 
 ## What is implemented
 
+The latest [operation outcomes and ownership guide](docs/OUTCOME_ANALYSIS.md) covers declared business outcomes, severity choices, callback contexts and registrations, retries, async ownership, uncertainty actions, independent review tooling, and scale measurements. [Implementation status](docs/IMPROVEMENT_BACKLOG.md) keeps the remaining evidence gaps explicit.
+
 - Python AST collection, import aliases, package-relative imports, `src/` layouts, nested functions, and conservative call resolution through local classes and simple or nullable type annotations.
 - Inferred edges from known class constructions to their explicit initializers, labeled as possible initializers in diagrams. Conflicting receiver types, decorated/customized construction, and inherited initializer lookup remain conservative.
 - Inferred receiver fields and local helper returns, including annotated parameters stored on `self`, compatible constructor assignments, method returns, and awaited async factories. Conflicting observed types remain unresolved.
@@ -107,6 +109,8 @@ See [implementation research and improvement priorities](docs/RELATED_WORK.md) f
 | FS006 | An existing exception-handler log may need traceback context |
 | FS007 | A background task handle is discarded |
 | FS008 | An explicitly configured operation may benefit from an INFO lifecycle event; opt-in only |
+| FS009 | A retained task has no established failure observation or ownership transfer |
+| FS010 | Retry-attempt ERROR logging may precede the final operation outcome |
 
 Narrow exception handlers can represent ordinary control flow or structured error returns. FS001 candidates for these handlers have low confidence and priority. `--min-confidence medium` hides those candidates without changing the underlying source facts.
 
@@ -226,13 +230,13 @@ Exception types from callees are not inferred. Typed handlers, conditional loggi
 
 Lambda defaults are scanned where the lambda is created; its body remains deferred. Pattern-match captures invalidate shadowed names. Unknown context managers are treated as possible exception-suppression barriers: instrumentation inside the barrier can be credited, but outer handlers/spans cannot. Multiple `with` items are modeled in nesting order. Known file, null, and recognized tracing contexts retain their modeled propagation behavior. This conservative approach can add review candidates for custom managers that do not suppress exceptions; the diagnostic makes that assumption explicit.
 
-Boundary rules identify review candidates. They cannot infer business importance from a network request or database call. Generic adapters intentionally miss unknown APIs rather than label every `.get()` or `.execute()` as an external operation. A small pinned PyCG evaluation set now measures call-pair accuracy and preserves known misses. Enterprise precision/recall and independent instrumentation judgments remain uncalibrated; see [accuracy results](docs/ACCURACY_AND_REVIEW.md).
+Boundary rules identify review candidates. They cannot infer business importance from a network request or database call. Generic adapters intentionally miss unknown APIs rather than label every `.get()` or `.execute()` as an external operation. A small pinned PyCG evaluation set now measures call-pair accuracy and preserves known misses. Enterprise precision/recall and independent instrumentation judgments remain uncalibrated; see [current accuracy evidence](docs/OUTCOME_ANALYSIS.md).
 
 LLM enrichment remains a future extension. Runtime call-pair import is available through `--runtime-trace`, with source hashes and separate observation/inference statuses. There is no LLM integration or source upload in this version. Any later enrichment should cite existing finding IDs and remain separate from deterministic facts; it should not be required for discovery.
 
 ## Accuracy, exports, and lifecycle review
 
-The latest [workflow analysis and review guide](docs/WORKFLOW_ACCURACY.md) covers callable-value inference, explicit handler-exit reporting paths, the expanded benchmark and independent-label packet, runtime collection, caching, and the workflow queue. Independent instrumentation adjudication remains pending.
+The previous [workflow analysis and review guide](docs/WORKFLOW_ACCURACY.md) covers callable-value inference, explicit handler-exit reporting paths, the expanded benchmark and independent-label packet, runtime collection, caching, and the workflow queue. Independent instrumentation adjudication remains pending.
 
 ```powershell
 flowsignal scan C:\path\to\repo --format sarif --output report.sarif
@@ -244,13 +248,15 @@ python scripts/validate_product_features.py
 python scripts/validate_workflow_enhancements.py
 ```
 
-The [accuracy and review guide](docs/ACCURACY_AND_REVIEW.md) documents the trace schema, review expiry, and reporting-path controls. The [workflow guide](docs/WORKFLOW_ACCURACY.md) has current benchmark and validation results.
+The [accuracy and review guide](docs/ACCURACY_AND_REVIEW.md) documents the trace schema, review expiry, and reporting-path controls. The [outcome analysis guide](docs/OUTCOME_ANALYSIS.md) has current benchmark and validation results.
 
 To gather a trace, explicitly wrap your selected tests with `from flowsignal.collector import collect` and `with collect(root, output, run_id="test-run"): ...`. Ordinary scans never launch tests. The new HTML queue filters new/expired findings, uncovered boundaries, and unresolved calls, groups them by workflow or reporting owner, and opens their source/reporting paths. Selecting a handler shows modeled branch exits and their instrumentation. Cache reuse is optional: unchanged scans can be faster, while changed-source scans still rebuild global relationships and may be slower than fresh scans.
 
 ## Development
 
-The project can scan and validate itself. Run `python scripts/dogfood.py` to exercise the CLI, compare its core static calls with observed execution, check report consistency, and inject failures. It creates `.artifacts/dogfood/self.html` plus machine-readable evidence. The [current validation record](docs/WORKFLOW_ACCURACY.md) describes 26 required observed relationships, the expanded accuracy corpus, and runtime collection; the [earlier dogfood review](docs/DOGFOOD.md) retains historical evidence. This is behavioral validation with explicit limitations, not a claim of full coverage.
+The [prioritized improvement backlog](docs/IMPROVEMENT_BACKLOG.md) defines planned work on outcome-aware advice, indirect calls, reporting ownership, independent accuracy validation, actionable uncertainty, and scale. Each item includes acceptance criteria and validation requirements; planned capabilities are not described as implemented.
+
+The project can scan and validate itself. Run `python scripts/dogfood.py` to exercise the CLI, compare its core static calls with observed execution, check report consistency, and inject failures. It creates `.artifacts/dogfood/self.html` plus machine-readable evidence. The [current validation record](docs/OUTCOME_ANALYSIS.md) describes 26 required observed relationships, the expanded accuracy corpus, and runtime collection; the [earlier dogfood review](docs/DOGFOOD.md) retains historical evidence. This is behavioral validation with explicit limitations, not a claim of full coverage.
 
 ```powershell
 $env:PYTHONPATH = "src"

@@ -210,6 +210,17 @@ def evaluate(manifest_path, review_path=None):
                 ).hexdigest(),
                 "source": case["source"],
                 "metrics": measured,
+                "contextual_call_metrics": score(
+                    labels["edges"],
+                    actual["edges"]
+                    | {
+                        (names[r["caller"]], names[r["callee"]])
+                        for r in report.contextual_calls
+                        if r["basis"] == "callable_argument"
+                    },
+                )
+                if "edges" in labels
+                else None,
                 "findings_by_rule": by_rule,
                 "unlabeled": sorted(set(actual) - set(measured)),
             }
@@ -238,6 +249,25 @@ def evaluate(manifest_path, review_path=None):
                 "recall": tp / (tp + fn) if tp + fn else None,
             }
     by_feature = {}
+    contextual_totals = {}
+    for split in totals:
+        metrics = [
+            c["contextual_call_metrics"]
+            for c in cases
+            if c["split"] == split and c["contextual_call_metrics"] is not None
+        ]
+        if metrics:
+            tp, fp, fn = (
+                sum(m[k] for m in metrics)
+                for k in ("true_positive", "false_positive", "false_negative")
+            )
+            contextual_totals[split] = {
+                "true_positive": tp,
+                "false_positive": fp,
+                "false_negative": fn,
+                "precision": tp / (tp + fp) if tp + fp else None,
+                "recall": tp / (tp + fn) if tp + fn else None,
+            }
     for case in cases:
         if "edges" in case["metrics"]:
             key = case["split"] + "/" + case["feature"]
@@ -258,6 +288,7 @@ def evaluate(manifest_path, review_path=None):
     return {
         "schema_version": "flowsignal-accuracy-results-1",
         "totals": totals,
+        "contextual_call_totals": contextual_totals,
         "cases": cases,
         "call_features": by_feature,
         "independently_reviewed_cases": sum(bool(c["reviewer"]) for c in cases),
@@ -323,6 +354,11 @@ def main():
                     for key in ("false_positive", "false_negative")
                 ):
                     raise SystemExit(f"Accuracy regression: {case['id']} {kind}")
+            if old.get("contextual_call_metrics") and any(
+                case["contextual_call_metrics"][k] > old["contextual_call_metrics"][k]
+                for k in ("false_positive", "false_negative")
+            ):
+                raise SystemExit(f"Contextual call accuracy regression: {case['id']}")
 
 
 if __name__ == "__main__":

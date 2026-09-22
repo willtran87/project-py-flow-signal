@@ -126,6 +126,11 @@ def export(report):
                     "runtimeComparison": report.runtime,
                     "reviewHistory": report.review_history,
                     "reviewQueue": report.review_queue,
+                    "operationOutcomes": report.operation_outcomes,
+                    "contextualCalls": report.contextual_calls,
+                    "taskOwnership": report.task_ownership,
+                    "retryScopes": report.retry_scopes,
+                    "recommendationUncertainty": report.recommendation_uncertainty,
                     "handlerPaths": [
                         {
                             "symbol": h.symbol,

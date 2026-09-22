@@ -109,6 +109,8 @@ def decode(value, depth=0):
 
 class ScanCache:
     def __init__(self, directory, config, root):
+        self.max_bytes = config.max_cache_bytes
+        self.max_entries = config.max_cache_entries
         self.directory = Path(directory).absolute()
         if any(
             is_link(p) for p in [self.directory, *self.directory.parents] if p.exists()
@@ -134,13 +136,18 @@ class ScanCache:
             "snapshot_reused": False,
             "invalid_entries": 0,
             "write_failures": 0,
+            "evicted_entries": 0,
+            "source_files_reused": 0,
         }
         self.trees = None
         self.used_paths = set()
         self.trees_changed = False
+        self.source_bytes = {}
 
     def read(self, key):
-        path = self.directory / (digest([self.namespace, key]) + ".json")
+        path = self.directory / (
+            "flowsignal-" + digest([self.namespace, key]) + ".json"
+        )
         if not path.exists():
             return None
         try:
@@ -158,10 +165,12 @@ class ScanCache:
             text = json.dumps(
                 {"checksum": digest(payload), "payload": payload}, ensure_ascii=True
             )
-            if len(text) > 64_000_000:
+            if len(text) > min(64_000_000, self.max_bytes):
                 self.stats["write_failures"] += 1
                 return
-            destination = self.directory / (digest([self.namespace, key]) + ".json")
+            destination = self.directory / (
+                "flowsignal-" + digest([self.namespace, key]) + ".json"
+            )
             if destination.exists() and is_link(destination):
                 raise ValueError("Linked cache entry")
             with tempfile.NamedTemporaryFile(
@@ -170,11 +179,51 @@ class ScanCache:
                 name = stream.name
                 stream.write(text)
             os.replace(name, destination)
+            self.prune(destination)
         except (ValueError, OSError, RecursionError):
             self.stats["write_failures"] += 1
         finally:
             if name and os.path.exists(name):
                 os.unlink(name)
+
+    def prune(self, keep):
+        """Delete only our regular cache entries inside the verified cache directory."""
+        if is_link(self.directory) or any(is_link(p) for p in self.directory.parents):
+            return
+        root = self.directory.resolve()
+        entries = []
+        for path in self.directory.glob("flowsignal-*.json"):
+            suffix = path.name.removeprefix("flowsignal-").removesuffix(".json")
+            if len(suffix) != 64 or any(c not in "0123456789abcdef" for c in suffix):
+                continue
+            try:
+                if (
+                    not is_link(path)
+                    and path.is_file()
+                    and path.resolve().parent == root
+                ):
+                    info = path.stat()
+                    entries.append((info.st_mtime_ns, str(path), info.st_size, path))
+            except OSError:
+                continue
+        total, count = sum(e[2] for e in entries), len(entries)
+        for _, _, size, path in sorted(entries):
+            if total <= self.max_bytes and count <= self.max_entries:
+                break
+            if path == keep:
+                continue
+            try:
+                if (
+                    not is_link(self.directory)
+                    and not is_link(path)
+                    and path.resolve().parent == root
+                ):
+                    path.unlink()
+                    total -= size
+                    count -= 1
+                    self.stats["evicted_entries"] += 1
+            except OSError:
+                continue
 
     def parse(self, source, relative, source_hash):
         self.last_miss = False
@@ -232,6 +281,7 @@ class ScanCache:
             snapshots.append(
                 [path.relative_to(root).as_posix(), hashlib.sha256(raw).hexdigest()]
             )
+            self.source_bytes[path.relative_to(root).as_posix()] = raw
         return ["report", snapshots]
 
     def report(self, key):

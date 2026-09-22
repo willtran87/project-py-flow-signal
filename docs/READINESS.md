@@ -1,6 +1,8 @@
 # Enterprise readiness assessment
 
-Current update: [workflow analysis and review](WORKFLOW_ACCURACY.md) adds callable-value inference, handler-exit reporting paths, expanded accuracy evaluation, explicit runtime collection, opt-in caching, and a workflow queue. The fresh call evaluation reports 14 correct pairs and 11 misses; independent instrumentation review remains pending. It supports regression checks, not an enterprise accuracy claim.
+Current update: [operation outcomes and ownership](OUTCOME_ANALYSIS.md) adds outcome declarations and recommendations, bounded callback/retry/async analysis, path uncertainty, cache retention, and a 30-scope source-only review cohort. Definitive call recall remains 56% on the selected external corpus; the separate contextual-candidate metric is 80%. Independent instrumentation adjudication remains pending. This remains an advisory scanner with explicit limits, not a validated enterprise assurance tool.
+
+Previous update: [workflow analysis and review](WORKFLOW_ACCURACY.md) adds callable-value inference, handler-exit reporting paths, expanded accuracy evaluation, explicit runtime collection, opt-in caching, and a workflow queue. The fresh call evaluation reports 14 correct pairs and 11 misses; independent instrumentation review remains pending. It supports regression checks, not an enterprise accuracy claim.
 
 Previous update: [accuracy and review](ACCURACY_AND_REVIEW.md) records the earlier six P1/P2 items. Its five evaluation cases have since moved to development after implementation tuning; its measurements remain historical.
 

@@ -79,6 +79,8 @@ INCOMPLETE_CODES = frozenset(
         "resolution_context_limit",
         "source_root_invalid",
         "duplicate_module",
+        "operation_contract_conflict",
+        "contextual_call_limit",
         "discovery_limit",
     }
 )
@@ -243,6 +245,11 @@ class Report:
     review_history: list[dict[str, Any]] = field(default_factory=list)
     runtime: dict[str, Any] | None = None
     review_queue: dict[str, Any] = field(default_factory=dict)
+    operation_outcomes: list[dict] = field(default_factory=list)
+    contextual_calls: list[dict] = field(default_factory=list)
+    task_ownership: list[dict] = field(default_factory=list)
+    retry_scopes: list[dict] = field(default_factory=list)
+    recommendation_uncertainty: list[dict] = field(default_factory=list)
 
     def summary(self) -> dict[str, Any]:
         return {

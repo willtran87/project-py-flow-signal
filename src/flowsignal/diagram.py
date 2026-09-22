@@ -273,6 +273,31 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
                 runtime_status=pair["status"],
                 count=pair["count"],
             )
+    for record in report.contextual_calls:
+        edge(
+            record["id"],
+            record["caller"],
+            record["callee"],
+            "deferred" if record["execution"].startswith("deferred_") else "contextual",
+            "declared deferred registration"
+            if record["basis"] == "declared_registration"
+            else "possible call in recorded binding context",
+            Location(**record["location"]),
+            context=record["context"],
+            basis=record["basis"],
+            execution=record["execution"],
+            coverage_eligible=False,
+        )
+    workflow = {
+        name: getattr(report, name)
+        for name in (
+            "operation_outcomes",
+            "contextual_calls",
+            "task_ownership",
+            "retry_scopes",
+            "recommendation_uncertainty",
+        )
+    }
     findings = {}
     for finding in report.findings:
         findings[finding.id] = asdict(finding)
@@ -341,6 +366,7 @@ def graph_data(report: Report, focus: str | None = None, max_nodes: int = 60) ->
         "runtime": report.runtime,
         "review_history": report.review_history,
         "review_queue": queue,
+        **workflow,
     }
 
 
@@ -367,7 +393,7 @@ def select_view(
     for edge in data["edges"]:
         source, target = by_id[edge["source"]], by_id[edge["target"]]
         if (
-            edge["kind"] in {"call", "deferred", "runtime"}
+            edge["kind"] in {"call", "deferred", "contextual", "runtime"}
             and target["kind"] == "symbol"
         ):
             owner = source["symbol"]

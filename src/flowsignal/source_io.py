@@ -43,7 +43,9 @@ def read_snapshot(path: Path, limit: int, root: Path | None = None) -> bytes:
         opened = os.fstat(handle.fileno())
         if not stat.S_ISREG(opened.st_mode) or identity(before) != identity(opened):
             raise ValueError("Input identity changed before reading")
-        raw = handle.read(limit + 1)
+        # Avoid allocating the entire configured budget for a small input. A
+        # growing file is rejected by the identity checks below.
+        raw = handle.read(min(limit, opened.st_size) + 1)
         after = os.fstat(handle.fileno())
     if len(raw) > limit:
         raise ValueError(f"Input exceeds the {limit}-byte limit")

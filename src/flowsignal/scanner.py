@@ -9,6 +9,7 @@ import hashlib
 import io
 import os
 import stat
+import time
 import tokenize
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -187,6 +188,7 @@ class Analysis:
     units: list[Unit] = field(default_factory=list)
     definitions: list[Definition] = field(default_factory=list)
     calls: list[Call] = field(default_factory=list)
+    call_nodes: dict[str, tuple] = field(default_factory=dict)
     logs: list[Log] = field(default_factory=list)
     reporting_signals: list[ReportingSignal] = field(default_factory=list)
     coverage: list[CoverageDecision] = field(default_factory=list)
@@ -1198,6 +1200,8 @@ class FactVisitor(ast.NodeVisitor):
         call.blocked_handler_ids = sorted(self.blocked_handler_ids)
         call.trace_evidence = list(self.trace_evidence)
         self.analysis.calls.append(call)
+        if not getter:
+            self.analysis.call_nodes[call.id] = (self.definition, node)
         if resolution in {"unresolved", "ambiguous"}:
             from .uncertainty import explain
 
@@ -1425,7 +1429,18 @@ def scan(
     config: Config | None = None,
     *,
     cache_dir: str | Path | None = None,
+    measure: bool = False,
 ) -> Report:
+    started = time.perf_counter() if measure else 0
+    measured = {}
+
+    def checkpoint(name):
+        nonlocal started
+        if measure:
+            current = time.perf_counter()
+            measured[name] = current - started
+            started = current
+
     config = config or Config()
     config.validate()
     supplied = Path(path).absolute()
@@ -1554,6 +1569,7 @@ def scan(
                 )
             )
             paths = paths[: config.max_files]
+    checkpoint("discovery")
     cache, snapshot_key = None, None
     if cache_dir is not None:
         from .cache import ScanCache, digest
@@ -1569,9 +1585,13 @@ def scan(
                     )
                 cached = cache.report(snapshot_key) if snapshot_key else None
                 if cached is not None:
+                    checkpoint("cache_lookup")
+                    if measure:
+                        cached.analysis_stats["timings"] = measured
                     return cached
             except (OSError, ValueError):
                 snapshot_key = None
+    checkpoint("cache_lookup")
     for source_path in paths:
         relative = source_path.relative_to(root).as_posix()
         record = {"path": relative, "status": "unreadable"}
@@ -1607,9 +1627,15 @@ def scan(
                     )
                 )
                 break
-            raw = read_snapshot(
-                source_path, min(config.max_file_bytes, remaining), root
-            )
+            raw = cache.source_bytes.pop(relative, None) if cache else None
+            if raw is None:
+                raw = read_snapshot(
+                    source_path, min(config.max_file_bytes, remaining), root
+                )
+            elif len(raw) > remaining:
+                raise ValueError("Cached source snapshot exceeds remaining byte budget")
+            else:
+                cache.stats["source_files_reused"] += 1
             analysis.stats["source_bytes"] += len(raw)
             record.update(bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest())
             encoding, _ = tokenize.detect_encoding(io.BytesIO(raw).readline)
@@ -1697,6 +1723,7 @@ def scan(
                     getattr(error, "lineno", None),
                 )
             )
+    checkpoint("source_parse_index")
     modules: dict[str, list[str]] = defaultdict(list)
     for unit in analysis.units:
         modules[unit.module].append(unit.path)
@@ -1742,12 +1769,17 @@ def scan(
                     definition.symbol.location.line,
                 )
             )
+    checkpoint("resolution")
     from .uncertainty import attach_entrypoints
 
     attach_entrypoints(analysis)
     from .rules import evaluate
 
     findings = evaluate(analysis)
+    from .workflow import enrich
+
+    workflow = enrich(analysis, findings)
+    checkpoint("coverage_and_workflows")
     from .baseline import fingerprint_findings
 
     fingerprint_findings(analysis, findings)
@@ -1770,10 +1802,12 @@ def scan(
         reporting_signals=analysis.reporting_signals,
         coverage=analysis.coverage,
         resolution_gaps=analysis.resolution_gaps,
+        **workflow,
     )
     from .review_queue import attach
 
     attach(report)
+    checkpoint("report_and_review")
     if cache:
         if (
             snapshot_key
@@ -1788,4 +1822,7 @@ def scan(
             cache.flush_trees()
             cache.write(snapshot_key, report.to_dict())
         report.analysis_stats["cache"] = dict(cache.stats)
+    checkpoint("cache_publication")
+    if measure:
+        report.analysis_stats["timings"] = measured
     return report

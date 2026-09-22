@@ -31,6 +31,8 @@ RULES = {
     "FS006": "Exception log lacks recognized traceback context",
     "FS007": "Background task handle is discarded",
     "FS008": "Configured operation has no INFO lifecycle signal",
+    "FS009": "Retained task failure observation is not established",
+    "FS010": "Retry attempt logs an error before the final outcome is known",
 }
 
 
@@ -38,7 +40,20 @@ def failure_logs(handler: Handler):
     return [
         log
         for log in handler.logs
-        if log.level in {"ERROR", "CRITICAL"} and not log.conditional
+        if log.level in {"ERROR", "CRITICAL"}
+        and (
+            not log.conditional
+            or handler.path_reporting
+            and all(
+                any(s["line"] == log.location.line for s in p["signals"])
+                or any(
+                    other.level in {"ERROR", "CRITICAL"}
+                    and any(s["line"] == other.location.line for s in p["signals"])
+                    for other in handler.logs
+                )
+                for p in handler.reporting_paths
+            )
+        )
     ]
 
 

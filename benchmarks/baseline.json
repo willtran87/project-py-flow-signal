@@ -39,6 +39,22 @@
     },
     "review_pending": {}
   },
+  "contextual_call_totals": {
+    "development": {
+      "true_positive": 13,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "evaluation": {
+      "true_positive": 20,
+      "false_positive": 0,
+      "false_negative": 5,
+      "precision": 1.0,
+      "recall": 0.8
+    }
+  },
   "cases": [
     {
       "id": "pycg/functions/call",
@@ -57,6 +73,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {},
       "unlabeled": [
@@ -82,6 +107,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -105,6 +139,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {},
       "unlabeled": [
@@ -130,6 +173,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 3,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -153,6 +205,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {},
       "unlabeled": [
@@ -196,6 +257,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {},
       "unlabeled": []
     },
@@ -234,6 +304,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {
         "FS001": {
@@ -293,6 +372,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": null,
+        "recall": null,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {
         "FS002": {
           "true_positive": 1,
@@ -341,6 +429,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": null,
+        "recall": null,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {
         "FS006": {
@@ -391,6 +488,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": null,
+        "recall": null,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {
         "FS003": {
           "true_positive": 1,
@@ -439,6 +545,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {
         "FS004": {
@@ -489,6 +604,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {
         "FS007": {
           "true_positive": 1,
@@ -538,6 +662,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": null,
+        "recall": null,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {
         "FS008": {
           "true_positive": 1,
@@ -574,6 +707,15 @@
           ]
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -603,6 +745,15 @@
           ]
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -631,6 +782,15 @@
             ]
           ]
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 3,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {},
       "unlabeled": [
@@ -669,6 +829,20 @@
           ]
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 3,
+        "false_positive": 0,
+        "false_negative": 1,
+        "precision": 1.0,
+        "recall": 0.75,
+        "unexpected": [],
+        "missed": [
+          [
+            "main.func2",
+            "main.func2"
+          ]
+        ]
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -702,6 +876,24 @@
           ]
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 3,
+        "false_positive": 0,
+        "false_negative": 2,
+        "precision": 1.0,
+        "recall": 0.6,
+        "unexpected": [],
+        "missed": [
+          [
+            "main.A.func",
+            "main.B.func2"
+          ],
+          [
+            "main.A.func",
+            "main.C.func2"
+          ]
+        ]
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -725,6 +917,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {},
       "unlabeled": [
@@ -759,6 +960,20 @@
           ]
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 1,
+        "precision": 1.0,
+        "recall": 0.6666666666666666,
+        "unexpected": [],
+        "missed": [
+          [
+            "main.MyClass.func2",
+            "main.MyClass.func3"
+          ]
+        ]
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -782,6 +997,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": null,
+        "recall": null,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {},
       "unlabeled": [
@@ -807,6 +1031,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 0,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": null,
+        "recall": null,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -831,6 +1064,15 @@
           "missed": []
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -854,6 +1096,15 @@
           "unexpected": [],
           "missed": []
         }
+      },
+      "contextual_call_metrics": {
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "unexpected": [],
+        "missed": []
       },
       "findings_by_rule": {},
       "unlabeled": [
@@ -884,6 +1135,20 @@
           ]
         }
       },
+      "contextual_call_metrics": {
+        "true_positive": 1,
+        "false_positive": 0,
+        "false_negative": 1,
+        "precision": 1.0,
+        "recall": 0.5,
+        "unexpected": [],
+        "missed": [
+          [
+            "main.func",
+            "main.<lambda1>"
+          ]
+        ]
+      },
       "findings_by_rule": {},
       "unlabeled": [
         "findings",
@@ -898,6 +1163,7 @@
       "label_signature": "fdbb55c58aeb8642f7fec62be73cd6c6fb1c7ca36e5e84cebb18969a17670fe0",
       "source": "FlowSignal-authored realistic workflow; awaiting independent instrumentation adjudication",
       "metrics": {},
+      "contextual_call_metrics": null,
       "findings_by_rule": {},
       "unlabeled": [
         "edges",

@@ -1,0 +1,376 @@
+{
+  "environment": {
+    "python": "3.14.5",
+    "platform": "Windows-10-10.0.19045-SP0"
+  },
+  "repeats": 5,
+  "mode_selection": "fresh",
+  "workloads": {
+    "synthetic-10000": {
+      "modes": {
+        "fresh": {
+          "median_seconds": 27.627960499958135,
+          "range_seconds": [
+            24.76586889999453,
+            35.88164430001052
+          ],
+          "peak_memory_bytes": 541224960,
+          "complete_runs": 5,
+          "samples": [
+            {
+              "scan_seconds": 35.88164430001052,
+              "timings": {
+                "discovery": 1.0211471999646164,
+                "cache_lookup": 4.200031980872154e-06,
+                "source_parse_index": 24.084032999991905,
+                "resolution": 4.11375489999773,
+                "coverage_and_workflows": 5.717532599985134,
+                "report_and_review": 0.937284100044053,
+                "cache_publication": 4.299974534660578e-06,
+                "serialization": 3.100176999985706,
+                "rendering": 2.542362400039565
+              },
+              "peak_memory_bytes": 541028352,
+              "summary": {
+                "files_scanned": 10000,
+                "symbols": 20000,
+                "calls": 19998,
+                "resolved_internal_calls": 9999,
+                "unresolved_calls": 0,
+                "ambiguous_calls": 0,
+                "unresolved_reasons": {},
+                "resolution_counts": {
+                  "import_or_annotation": 9999,
+                  "lexical": 9999
+                },
+                "propagation_uncertain_calls": 0,
+                "diagnostic_counts": {},
+                "status": "complete",
+                "findings": 9999,
+                "diagnostics": 0,
+                "reporting_signals": 0,
+                "boundary_coverage": {
+                  "not_established": 9999
+                },
+                "dismissed_findings": 0,
+                "baseline": null
+              },
+              "cache": null,
+              "semantic_digest": "f6f6196964a7aa76bcd37afeee0494fdd824ef8e0baec65cbcbdfaba92cb5966",
+              "html_bytes": 53057178,
+              "settings": {
+                "exclude": [],
+                "entrypoints": [],
+                "logger_names": [],
+                "boundaries": [],
+                "loggers": [],
+                "reporters": [],
+                "operations": [],
+                "registrations": [],
+                "retries": [],
+                "max_cache_bytes": 256000000,
+                "max_cache_entries": 16,
+                "max_files": 10000,
+                "max_file_bytes": 2000000,
+                "max_path_depth": 8,
+                "max_paths": 5,
+                "lifecycle_info": false,
+                "source_roots": [],
+                "include_source": true,
+                "max_total_bytes": 64000000,
+                "max_ast_nodes": 2000000,
+                "max_ast_depth": 120,
+                "max_graph_steps": 1000000,
+                "max_type_steps": 1000000,
+                "max_resolution_steps": 100000,
+                "max_discovery_entries": 100000
+              }
+            },
+            {
+              "scan_seconds": 28.821673900005408,
+              "timings": {
+                "discovery": 0.9114637000020593,
+                "cache_lookup": 4.700035788118839e-06,
+                "source_parse_index": 17.19176630000584,
+                "resolution": 4.295189999975264,
+                "coverage_and_workflows": 5.527574000007007,
+                "report_and_review": 0.8895311999949627,
+                "cache_publication": 6.599992047995329e-06,
+                "serialization": 3.0430187999736518,
+                "rendering": 2.5716248999815434
+              },
+              "peak_memory_bytes": 541159424,
+              "summary": {
+                "files_scanned": 10000,
+                "symbols": 20000,
+                "calls": 19998,
+                "resolved_internal_calls": 9999,
+                "unresolved_calls": 0,
+                "ambiguous_calls": 0,
+                "unresolved_reasons": {},
+                "resolution_counts": {
+                  "import_or_annotation": 9999,
+                  "lexical": 9999
+                },
+                "propagation_uncertain_calls": 0,
+                "diagnostic_counts": {},
+                "status": "complete",
+                "findings": 9999,
+                "diagnostics": 0,
+                "reporting_signals": 0,
+                "boundary_coverage": {
+                  "not_established": 9999
+                },
+                "dismissed_findings": 0,
+                "baseline": null
+              },
+              "cache": null,
+              "semantic_digest": "f6f6196964a7aa76bcd37afeee0494fdd824ef8e0baec65cbcbdfaba92cb5966",
+              "html_bytes": 53057178,
+              "settings": {
+                "exclude": [],
+                "entrypoints": [],
+                "logger_names": [],
+                "boundaries": [],
+                "loggers": [],
+                "reporters": [],
+                "operations": [],
+                "registrations": [],
+                "retries": [],
+                "max_cache_bytes": 256000000,
+                "max_cache_entries": 16,
+                "max_files": 10000,
+                "max_file_bytes": 2000000,
+                "max_path_depth": 8,
+                "max_paths": 5,
+                "lifecycle_info": false,
+                "source_roots": [],
+                "include_source": true,
+                "max_total_bytes": 64000000,
+                "max_ast_nodes": 2000000,
+                "max_ast_depth": 120,
+                "max_graph_steps": 1000000,
+                "max_type_steps": 1000000,
+                "max_resolution_steps": 100000,
+                "max_discovery_entries": 100000
+              }
+            },
+            {
+              "scan_seconds": 27.627960499958135,
+              "timings": {
+                "discovery": 0.8988423999981023,
+                "cache_lookup": 4.900037311017513e-06,
+                "source_parse_index": 16.255874899972696,
+                "resolution": 4.2031269000144675,
+                "coverage_and_workflows": 5.3138207999872975,
+                "report_and_review": 0.9502821000060067,
+                "cache_publication": 5.099980626255274e-06,
+                "serialization": 3.2844366000499576,
+                "rendering": 2.5458228000206873
+              },
+              "peak_memory_bytes": 540930048,
+              "summary": {
+                "files_scanned": 10000,
+                "symbols": 20000,
+                "calls": 19998,
+                "resolved_internal_calls": 9999,
+                "unresolved_calls": 0,
+                "ambiguous_calls": 0,
+                "unresolved_reasons": {},
+                "resolution_counts": {
+                  "import_or_annotation": 9999,
+                  "lexical": 9999
+                },
+                "propagation_uncertain_calls": 0,
+                "diagnostic_counts": {},
+                "status": "complete",
+                "findings": 9999,
+                "diagnostics": 0,
+                "reporting_signals": 0,
+                "boundary_coverage": {
+                  "not_established": 9999
+                },
+                "dismissed_findings": 0,
+                "baseline": null
+              },
+              "cache": null,
+              "semantic_digest": "f6f6196964a7aa76bcd37afeee0494fdd824ef8e0baec65cbcbdfaba92cb5966",
+              "html_bytes": 53057178,
+              "settings": {
+                "exclude": [],
+                "entrypoints": [],
+                "logger_names": [],
+                "boundaries": [],
+                "loggers": [],
+                "reporters": [],
+                "operations": [],
+                "registrations": [],
+                "retries": [],
+                "max_cache_bytes": 256000000,
+                "max_cache_entries": 16,
+                "max_files": 10000,
+                "max_file_bytes": 2000000,
+                "max_path_depth": 8,
+                "max_paths": 5,
+                "lifecycle_info": false,
+                "source_roots": [],
+                "include_source": true,
+                "max_total_bytes": 64000000,
+                "max_ast_nodes": 2000000,
+                "max_ast_depth": 120,
+                "max_graph_steps": 1000000,
+                "max_type_steps": 1000000,
+                "max_resolution_steps": 100000,
+                "max_discovery_entries": 100000
+              }
+            },
+            {
+              "scan_seconds": 24.76586889999453,
+              "timings": {
+                "discovery": 0.9486835999996401,
+                "cache_lookup": 5.299982149153948e-06,
+                "source_parse_index": 14.417184400022961,
+                "resolution": 3.6209952000062913,
+                "coverage_and_workflows": 4.934017199964728,
+                "report_and_review": 0.8387762000202201,
+                "cache_publication": 4.699977580457926e-06,
+                "serialization": 3.102207300020382,
+                "rendering": 2.579325800004881
+              },
+              "peak_memory_bytes": 540954624,
+              "summary": {
+                "files_scanned": 10000,
+                "symbols": 20000,
+                "calls": 19998,
+                "resolved_internal_calls": 9999,
+                "unresolved_calls": 0,
+                "ambiguous_calls": 0,
+                "unresolved_reasons": {},
+                "resolution_counts": {
+                  "import_or_annotation": 9999,
+                  "lexical": 9999
+                },
+                "propagation_uncertain_calls": 0,
+                "diagnostic_counts": {},
+                "status": "complete",
+                "findings": 9999,
+                "diagnostics": 0,
+                "reporting_signals": 0,
+                "boundary_coverage": {
+                  "not_established": 9999
+                },
+                "dismissed_findings": 0,
+                "baseline": null
+              },
+              "cache": null,
+              "semantic_digest": "f6f6196964a7aa76bcd37afeee0494fdd824ef8e0baec65cbcbdfaba92cb5966",
+              "html_bytes": 53057178,
+              "settings": {
+                "exclude": [],
+                "entrypoints": [],
+                "logger_names": [],
+                "boundaries": [],
+                "loggers": [],
+                "reporters": [],
+                "operations": [],
+                "registrations": [],
+                "retries": [],
+                "max_cache_bytes": 256000000,
+                "max_cache_entries": 16,
+                "max_files": 10000,
+                "max_file_bytes": 2000000,
+                "max_path_depth": 8,
+                "max_paths": 5,
+                "lifecycle_info": false,
+                "source_roots": [],
+                "include_source": true,
+                "max_total_bytes": 64000000,
+                "max_ast_nodes": 2000000,
+                "max_ast_depth": 120,
+                "max_graph_steps": 1000000,
+                "max_type_steps": 1000000,
+                "max_resolution_steps": 100000,
+                "max_discovery_entries": 100000
+              }
+            },
+            {
+              "scan_seconds": 25.301427999977022,
+              "timings": {
+                "discovery": 0.9256034000427462,
+                "cache_lookup": 5.999987479299307e-06,
+                "source_parse_index": 14.877005000016652,
+                "resolution": 3.756929399969522,
+                "coverage_and_workflows": 4.871787299984135,
+                "report_and_review": 0.8635588000179268,
+                "cache_publication": 4.600035026669502e-06,
+                "serialization": 3.0817385999835096,
+                "rendering": 2.5494275000528432
+              },
+              "peak_memory_bytes": 541224960,
+              "summary": {
+                "files_scanned": 10000,
+                "symbols": 20000,
+                "calls": 19998,
+                "resolved_internal_calls": 9999,
+                "unresolved_calls": 0,
+                "ambiguous_calls": 0,
+                "unresolved_reasons": {},
+                "resolution_counts": {
+                  "import_or_annotation": 9999,
+                  "lexical": 9999
+                },
+                "propagation_uncertain_calls": 0,
+                "diagnostic_counts": {},
+                "status": "complete",
+                "findings": 9999,
+                "diagnostics": 0,
+                "reporting_signals": 0,
+                "boundary_coverage": {
+                  "not_established": 9999
+                },
+                "dismissed_findings": 0,
+                "baseline": null
+              },
+              "cache": null,
+              "semantic_digest": "f6f6196964a7aa76bcd37afeee0494fdd824ef8e0baec65cbcbdfaba92cb5966",
+              "html_bytes": 53057178,
+              "settings": {
+                "exclude": [],
+                "entrypoints": [],
+                "logger_names": [],
+                "boundaries": [],
+                "loggers": [],
+                "reporters": [],
+                "operations": [],
+                "registrations": [],
+                "retries": [],
+                "max_cache_bytes": 256000000,
+                "max_cache_entries": 16,
+                "max_files": 10000,
+                "max_file_bytes": 2000000,
+                "max_path_depth": 8,
+                "max_paths": 5,
+                "lifecycle_info": false,
+                "source_roots": [],
+                "include_source": true,
+                "max_total_bytes": 64000000,
+                "max_ast_nodes": 2000000,
+                "max_ast_depth": 120,
+                "max_graph_steps": 1000000,
+                "max_type_steps": 1000000,
+                "max_resolution_steps": 100000,
+                "max_discovery_entries": 100000
+              }
+            }
+          ]
+        }
+      },
+      "targets": {
+        "warm_at_most_70_percent": null,
+        "leaf_change_at_most_110_percent": null
+      },
+      "equivalence": "not measured"
+    }
+  },
+  "note": "Isolated subprocesses, sequential measurements; setup is excluded. Peak working set/RSS includes serialization and HTML rendering. Timings are observations, not CI assertions. Selected public libraries are not representative enterprise applications."
+}

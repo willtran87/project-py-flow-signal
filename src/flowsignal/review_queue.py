@@ -7,6 +7,9 @@ from dataclasses import asdict
 
 
 def attach(report):
+    from .path_uncertainty import attach as uncertainty
+
+    uncertainty(report)
     symbols = {s.id: s for s in report.symbols}
     incoming = defaultdict(set)
     for call in report.calls:

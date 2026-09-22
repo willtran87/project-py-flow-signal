@@ -4,7 +4,7 @@
 
 ## Development
 
-Eight FlowSignal-authored cases cover all eight instrumentation rules, known calls, an outer reporting owner, and negative controls. Five original PyCG evaluation cases have moved into development because they were used to guide callable-value implementation: `functions/call`, `functions/imported_call`, `returns/call`, `assignments/tuple`, and `classes/super_class_return`. All nine expected pairs in those five cases now resolve, including the six former misses. These 13 cases are regression tests, not independent validation. Authored instrumentation labels do not establish real-world rule accuracy.
+Eight original FlowSignal-authored cases cover the original eight instrumentation rules, known calls, an outer reporting owner, and negative controls. Five original PyCG evaluation cases have moved into development because they were used to guide callable-value implementation: `functions/call`, `functions/imported_call`, `returns/call`, `assignments/tuple`, and `classes/super_class_return`. All nine expected pairs in those five cases now resolve, including the six former misses. These 13 cases are regression tests, not independent validation. Authored instrumentation labels do not establish real-world rule accuracy.
 
 ## Evaluation
 
@@ -31,3 +31,20 @@ Results compare unique qualified caller/callee pairs. FlowSignal module names ha
 Generate a packet with `python scripts/benchmark_accuracy.py --export-review .artifacts/review.json`. A reviewer fills identity, rationale, completion state, findings, and owner labels. Import with `--review-file .artifacts/review.json` to score those labels. The importer verifies source hashes and configuration and rejects missing/incomplete labels. Declared reviewer identity is not authenticated. Do not call self-authored judgments independent.
 
 The baseline gate verifies corpus membership, split, metric membership, and a signature of source/configuration/labels in addition to checking per-case false-positive and false-negative counts. See [workflow analysis and review](../docs/WORKFLOW_ACCURACY.md) for current results and limits. Cases used for tuning must move to development; do not overwrite labels to hide a regression.
+
+
+## Contextual callable metric
+
+The definitive call metric above is unchanged. The separate `contextual_call_totals` metric in `baseline.json` includes call-site callable-argument candidates: 20 correct pairs, zero extras, five misses (80% recall) on the same 25 evaluation pairs. These edges are contextual possibilities and do not establish universal call targets or reporting coverage. The gate checks both metrics without changing upstream labels. FS009 and FS010 are covered by authored unit/integration cases; they have no independent recommendation labels yet.
+
+## Thirty-scope independent workflow cohort
+
+`workflow-cohort.json` freezes ten selected scopes from each of Flask, Billiard, and Tenacity, covering service, background, and callback/retry workflows. Full Python package trees are included for context under `corpus/workflow_review`, together with original licenses/notices. Exact revisions, configurations, source membership, hashes, workflow scope, development-use status, and the scoring rubric are in the manifest. This is a selected sample, not a random enterprise cohort. The code is parsed only.
+
+Prepare source-only packets with `python scripts/workflow_review.py --packet .artifacts/workflow-review.json`. No actual reviewer labels have been supplied. Pending and abstained cases remain unscored; authored importer test labels are not independent evidence. See the [current guide](../docs/OUTCOME_ANALYSIS.md) for scoring, overlap/adjudication requirements, metric denominators, and limitations.
+
+Pinned upstream sources and retained license locations:
+
+- [flask](https://github.com/pallets/flask/tree/d73fa1cdcbd8b1465c151db8924ba58b1dd14e35) (`d73fa1cdcbd8b1465c151db8924ba58b1dd14e35`); [LICENSE.txt](corpus/workflow_review/flask/LICENSE.txt).
+- [billiard](https://github.com/celery/billiard/tree/7fb0abe4eb706b44cd839f3757f47d1a962e78a0) (`7fb0abe4eb706b44cd839f3757f47d1a962e78a0`); [LICENSE.txt](corpus/workflow_review/billiard/LICENSE.txt).
+- [tenacity](https://github.com/jd/tenacity/tree/3e58094d3bc414975aad9eadf343a32bdb3b89b3) (`3e58094d3bc414975aad9eadf343a32bdb3b89b3`); [LICENSE](corpus/workflow_review/tenacity/LICENSE).

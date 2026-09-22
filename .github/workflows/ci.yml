@@ -27,4 +27,6 @@ jobs:
       - run: python scripts/validate_product_features.py
       - run: python scripts/validate_workflow_enhancements.py
       - run: python scripts/benchmark_incremental.py --files 40
+      - run: python scripts/validate_outcomes.py
+      - run: python scripts/workflow_review.py
       - run: python -m build --wheel

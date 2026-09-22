@@ -1,0 +1,13 @@
+{
+  "schema_version": "flowsignal-workflow-accuracy-1",
+  "cohort_signature": "7995d4ce5ac3c76ddb02cdcc632bab379f92da989ed3c393ba9016e89ff09187",
+  "results": [],
+  "shared_independent_scenarios": 0,
+  "review_pair_overlap": [],
+  "independent_review_complete": false,
+  "disagreements": [],
+  "adjudicated_scenarios": [],
+  "unadjudicated_disagreements": 0,
+  "adjudication_complete": false,
+  "note": "Declared human labels are not authenticated. Wilson intervals describe this selected sample only; scenarios may be correlated. No label means unscored, not success. Adjudication is reported separately."
+}

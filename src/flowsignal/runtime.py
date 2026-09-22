@@ -144,6 +144,9 @@ def compare_trace(report, path: Path):
         "static_not_observed": [list(pair) for pair in sorted(static - trusted)],
         "note": "Externally supplied observations are not authenticated. Matching source hashes establish snapshot agreement, not complete execution coverage. Static findings and coverage decisions are unchanged.",
     }
+    from .path_uncertainty import attach
+
+    attach(report)
 
 
 def compare_runs(report, previous):
