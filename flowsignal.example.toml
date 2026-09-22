@@ -1,0 +1,27 @@
+[flowsignal]
+exclude = ["tests", "generated", "vendor"]
+entrypoints = ["app.api.checkout", "app.worker.process_job"]
+logger_names = ["audit_logger"]
+max_files = 10000
+max_file_bytes = 2000000
+max_total_bytes = 64000000
+max_ast_nodes = 2000000
+max_ast_depth = 120
+max_graph_steps = 1000000
+max_discovery_entries = 100000
+max_path_depth = 8
+max_paths = 5
+# For monorepos, list import roots relative to the scan directory.
+# source_roots = ["services/orders/src", "libraries/common/src"]
+# Set false to omit source excerpts; names, paths, and metadata remain.
+include_source = true
+# Optional: review successful lifecycle events only for configured entrypoints.
+lifecycle_info = false
+
+[[flowsignal.boundaries]]
+pattern = "company.gateway.Client.*"
+category = "network"
+
+[[flowsignal.loggers]]
+pattern = "company.telemetry.record_failure"
+level = "ERROR"
